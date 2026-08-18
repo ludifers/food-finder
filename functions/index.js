@@ -8,25 +8,35 @@ initializeApp();
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
+const PAID_SWIPE_CHOICE_PACK_SIZE = 20;
 
-async function unlockPremium(session) {
+async function addSwipeChoices(session) {
   const userId = session.client_reference_id;
 
   if (!userId) {
     throw new Error("Missing client_reference_id on Stripe Checkout Session.");
   }
 
-  await getFirestore()
-    .doc(`users/${userId}/billing/status`)
-    .set(
+  const db = getFirestore();
+
+  await Promise.all([
+    db.doc(`users/${userId}/usage/swipeDecisions`).set(
       {
+        paidChoicesRemaining: FieldValue.increment(PAID_SWIPE_CHOICE_PACK_SIZE),
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    ),
+    db.doc(`users/${userId}/billing/status`).set(
+      {
+        choicePackSize: PAID_SWIPE_CHOICE_PACK_SIZE,
         checkoutSessionId: session.id,
-        isPremium: true,
-        premiumUnlockedAt: FieldValue.serverTimestamp(),
+        lastChoicePackPurchasedAt: FieldValue.serverTimestamp(),
         stripeCustomerId: session.customer || null,
       },
       { merge: true }
-    );
+    ),
+  ]);
 }
 
 exports.stripeWebhook = onRequest(
@@ -59,7 +69,7 @@ exports.stripeWebhook = onRequest(
 
     try {
       if (event.type === "checkout.session.completed") {
-        await unlockPremium(event.data.object);
+        await addSwipeChoices(event.data.object);
       }
 
       response.json({ received: true });

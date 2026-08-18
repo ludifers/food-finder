@@ -1,4 +1,6 @@
-const PREMIUM_PAYMENT_LINK = import.meta.env.VITE_STRIPE_PREMIUM_PAYMENT_LINK;
+const CHOICES_PAYMENT_LINK =
+  import.meta.env.VITE_STRIPE_CHOICES_PAYMENT_LINK ||
+  import.meta.env.VITE_STRIPE_PREMIUM_PAYMENT_LINK;
 
 function addCheckoutParams(paymentLink, user) {
   const checkoutUrl = new URL(paymentLink);
@@ -12,20 +14,20 @@ function addCheckoutParams(paymentLink, user) {
   return checkoutUrl.toString();
 }
 
-export function getPremiumCheckoutUrl(user) {
-  if (!PREMIUM_PAYMENT_LINK) {
+export function getChoicesCheckoutUrl(user) {
+  if (!CHOICES_PAYMENT_LINK) {
     throw new Error(
-      "Premium checkout is not set up yet. Add VITE_STRIPE_PREMIUM_PAYMENT_LINK to your env file."
+      "Checkout is not set up yet. Add VITE_STRIPE_CHOICES_PAYMENT_LINK to your env file."
     );
   }
 
   if (!user?.uid) {
-    throw new Error("Log in before upgrading to Premium.");
+    throw new Error("Log in before buying more choices.");
   }
 
-  return addCheckoutParams(PREMIUM_PAYMENT_LINK, user);
+  return addCheckoutParams(CHOICES_PAYMENT_LINK, user);
 }
 
-export function startPremiumCheckout(user) {
-  window.location.assign(getPremiumCheckoutUrl(user));
+export function startChoicesCheckout(user) {
+  window.location.assign(getChoicesCheckoutUrl(user));
 }

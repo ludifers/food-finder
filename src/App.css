@@ -1974,7 +1974,7 @@ button {
   line-height: 1.25;
 }
 
-.premium-panel {
+.choice-pack-panel {
   display: grid;
   gap: 10px;
   border: 1px solid #d9e5dc;
@@ -1983,22 +1983,22 @@ button {
   padding: 16px;
 }
 
-.premium-panel h3,
-.premium-panel p {
+.choice-pack-panel h3,
+.choice-pack-panel p {
   margin: 0;
 }
 
-.premium-panel h3 {
+.choice-pack-panel h3 {
   color: #10231a;
   line-height: 1.15;
 }
 
-.premium-panel p:not(.eyebrow):not(.account-error) {
+.choice-pack-panel p:not(.eyebrow):not(.account-error) {
   color: #59685f;
   line-height: 1.45;
 }
 
-.premium-panel .primary-btn {
+.choice-pack-panel .primary-btn {
   width: 100%;
 }
 

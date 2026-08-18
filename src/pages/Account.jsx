@@ -13,9 +13,10 @@ import {
   loadMatchPreferences,
   saveMatchPreferences,
 } from "../services/matchPreferences";
-import { startPremiumCheckout } from "../services/payments";
+import { startChoicesCheckout } from "../services/payments";
 import {
   FREE_SWIPE_DECISION_LIMIT,
+  PAID_SWIPE_CHOICE_PACK_SIZE,
   getSwipeDecisionUsage,
   getUserPreferences,
   saveUserPreferences,
@@ -150,7 +151,7 @@ function Account() {
   const [paymentStatus, setPaymentStatus] = useState("");
   const [swipeUsage, setSwipeUsage] = useState({
     count: 0,
-    isPremium: false,
+    paidChoicesRemaining: 0,
     userId: "",
   });
   const profileInitial =
@@ -296,15 +297,22 @@ function Account() {
     setProfileStatus("Changes cancelled.");
   }
 
-  function handleUpgradeToPremium() {
+  function handleBuyChoices() {
     setPaymentStatus("");
 
     try {
-      startPremiumCheckout(user);
+      startChoicesCheckout(user);
     } catch (paymentError) {
       setPaymentStatus(paymentError.message);
     }
   }
+
+  const freeChoicesRemaining = Math.max(
+    0,
+    FREE_SWIPE_DECISION_LIMIT - swipeUsage.count
+  );
+  const totalChoicesRemaining =
+    freeChoicesRemaining + swipeUsage.paidChoicesRemaining;
 
   return (
     <div>
@@ -360,26 +368,28 @@ function Account() {
                 </article>
                 <article>
                   <span>Plan</span>
-                  <strong>
-                    {swipeUsage.isPremium
-                      ? "Premium"
-                      : `${Math.max(0, FREE_SWIPE_DECISION_LIMIT - swipeUsage.count)} free decisions left`}
-                  </strong>
+                  <strong>{totalChoicesRemaining} choices left</strong>
                 </article>
               </div>
 
-              <div className="premium-panel">
-                <p className="eyebrow">Premium</p>
-                <h3>Keep swiping after your free decisions.</h3>
-                <p>Premium unlocks more Yes, No, and Maybe choices for UCF matches.</p>
+              <div className="choice-pack-panel">
+                <p className="eyebrow">Choice pack</p>
+                <h3>Buy {PAID_SWIPE_CHOICE_PACK_SIZE} more swipe choices.</h3>
+                <p>
+                  Use them for more Yes, No, and Maybe decisions after your free
+                  choices run out.
+                </p>
+                <p>
+                  {freeChoicesRemaining} free / {swipeUsage.paidChoicesRemaining} paid
+                  choices remaining.
+                </p>
                 {paymentStatus && <p className="account-error">{paymentStatus}</p>}
                 <button
                   className="primary-btn"
-                  disabled={swipeUsage.isPremium}
-                  onClick={handleUpgradeToPremium}
+                  onClick={handleBuyChoices}
                   type="button"
                 >
-                  {swipeUsage.isPremium ? "Premium active" : "Upgrade to Premium"}
+                  Buy {PAID_SWIPE_CHOICE_PACK_SIZE} choices
                 </button>
               </div>
 

@@ -10,6 +10,7 @@ import {
 import { db } from "./firebase";
 
 export const FREE_SWIPE_DECISION_LIMIT = 5;
+export const PAID_SWIPE_CHOICE_PACK_SIZE = 20;
 
 function localSavedKey(userId) {
   return `savedRestaurants:${userId}`;
@@ -150,15 +151,15 @@ export async function saveUserPreferences(userId, preferences) {
 }
 
 export function getLocalSwipeDecisionUsage(userId) {
-  if (!userId) return { count: 0, isPremium: false };
+  if (!userId) return { count: 0, paidChoicesRemaining: 0 };
 
   try {
     return JSON.parse(localStorage.getItem(localSwipeUsageKey(userId))) || {
       count: 0,
-      isPremium: false,
+      paidChoicesRemaining: 0,
     };
   } catch {
-    return { count: 0, isPremium: false };
+    return { count: 0, paidChoicesRemaining: 0 };
   }
 }
 
@@ -174,15 +175,12 @@ export async function getSwipeDecisionUsage(userId) {
     return localUsage;
   }
 
-  const [usageSnap, billingSnap] = await Promise.all([
-    getDoc(doc(db, "users", userId, "usage", "swipeDecisions")),
-    getDoc(doc(db, "users", userId, "billing", "status")),
-  ]);
+  const usageSnap = await getDoc(doc(db, "users", userId, "usage", "swipeDecisions"));
   const usage = {
     count: usageSnap.exists() ? Number(usageSnap.data().count) || 0 : 0,
-    isPremium: billingSnap.exists()
-      ? Boolean(billingSnap.data().isPremium)
-      : Boolean(localUsage.isPremium),
+    paidChoicesRemaining: usageSnap.exists()
+      ? Number(usageSnap.data().paidChoicesRemaining) || 0
+      : Number(localUsage.paidChoicesRemaining) || 0,
   };
 
   saveLocalSwipeDecisionUsage(userId, usage);
@@ -191,9 +189,19 @@ export async function getSwipeDecisionUsage(userId) {
 
 export async function incrementSwipeDecisionUsage(userId) {
   const currentUsage = await getSwipeDecisionUsage(userId);
+  const hasFreeChoices = currentUsage.count < FREE_SWIPE_DECISION_LIMIT;
+  const hasPaidChoices = currentUsage.paidChoicesRemaining > 0;
+
+  if (!hasFreeChoices && !hasPaidChoices) {
+    throw new Error("You used your free choices. Buy 20 more choices to keep swiping.");
+  }
+
   const nextUsage = {
     ...currentUsage,
-    count: currentUsage.count + 1,
+    count: hasFreeChoices ? currentUsage.count + 1 : currentUsage.count,
+    paidChoicesRemaining: hasFreeChoices
+      ? currentUsage.paidChoicesRemaining
+      : currentUsage.paidChoicesRemaining - 1,
   };
 
   saveLocalSwipeDecisionUsage(userId, nextUsage);
@@ -203,6 +211,7 @@ export async function incrementSwipeDecisionUsage(userId) {
       doc(db, "users", userId, "usage", "swipeDecisions"),
       {
         count: nextUsage.count,
+        paidChoicesRemaining: nextUsage.paidChoicesRemaining,
         updatedAt: serverTimestamp(),
       },
       { merge: true }

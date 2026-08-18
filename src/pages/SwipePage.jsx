@@ -20,7 +20,7 @@ import {
   getRestaurantDriveMinutes,
   loadMatchPreferences,
 } from "../services/matchPreferences";
-import { startPremiumCheckout } from "../services/payments";
+import { startChoicesCheckout } from "../services/payments";
 import { UCF_CENTER } from "../services/ucfArea";
 import {
   FREE_SWIPE_DECISION_LIMIT,
@@ -97,7 +97,7 @@ function SwipePage() {
   const [mapStatus, setMapStatus] = useState("");
   const [swipeUsage, setSwipeUsage] = useState({
     count: 0,
-    isPremium: false,
+    paidChoicesRemaining: 0,
     userId: "",
   });
   const RestaurantMap = shouldUseGoogleProvider()
@@ -143,16 +143,16 @@ function SwipePage() {
     ? swipeUsage
     : {
         count: 0,
-        isPremium: false,
+        paidChoicesRemaining: 0,
         userId: "",
       };
   const freeDecisionsRemaining = Math.max(
     0,
     FREE_SWIPE_DECISION_LIMIT - effectiveSwipeUsage.count
   );
-  const hasPremiumAccess =
-    effectiveSwipeUsage.isPremium ||
-    effectiveSwipeUsage.count < FREE_SWIPE_DECISION_LIMIT;
+  const totalChoicesRemaining =
+    freeDecisionsRemaining + effectiveSwipeUsage.paidChoicesRemaining;
+  const hasChoicesRemaining = totalChoicesRemaining > 0;
 
   useEffect(() => {
     if (!user) {
@@ -169,7 +169,11 @@ function SwipePage() {
       })
       .catch(() => {
         if (!ignore) {
-          setSwipeUsage({ count: 0, isPremium: false, userId: user.uid });
+          setSwipeUsage({
+            count: 0,
+            paidChoicesRemaining: 0,
+            userId: user.uid,
+          });
         }
       });
 
@@ -205,14 +209,14 @@ function SwipePage() {
     });
   }
 
-  function handleUpgradeToPremium() {
+  function handleBuyChoices() {
     if (!user) {
       navigate("/account");
       return;
     }
 
     try {
-      startPremiumCheckout(user);
+      startChoicesCheckout(user);
     } catch (paymentError) {
       setSaveError(paymentError.message);
     }
@@ -230,8 +234,8 @@ function SwipePage() {
 
     setSaveError("");
 
-    if (!hasPremiumAccess) {
-      setSaveError("You used your 5 free decisions. Upgrade to Premium to keep swiping.");
+    if (!hasChoicesRemaining) {
+      setSaveError("You used your free choices. Buy 20 more choices to keep swiping.");
       return;
     }
 
@@ -535,26 +539,27 @@ function SwipePage() {
 
           <div className="choice-summary">
             <p>
-              {effectiveSwipeUsage.isPremium
-                ? "Premium active: unlimited decisions."
-                : `${freeDecisionsRemaining} of ${FREE_SWIPE_DECISION_LIMIT} free decisions left.`}
+              {`${totalChoicesRemaining} choices left.`}
+              {!freeDecisionsRemaining &&
+                effectiveSwipeUsage.paidChoicesRemaining > 0 &&
+                ` ${effectiveSwipeUsage.paidChoicesRemaining} paid choices remaining.`}
             </p>
-            {!effectiveSwipeUsage.isPremium && freeDecisionsRemaining === 0 && (
+            {totalChoicesRemaining === 0 && (
               <button
                 className="primary-btn upgrade-btn"
-                onClick={handleUpgradeToPremium}
+                onClick={handleBuyChoices}
                 type="button"
               >
-                Upgrade to Premium
+                Buy 20 more choices
               </button>
             )}
           </div>
 
-          <div className={`action-row${hasPremiumAccess ? "" : " locked"}`}>
+          <div className={`action-row${hasChoicesRemaining ? "" : " locked"}`}>
             <button
               onClick={() => handleChoice("pass")}
               className="pass-btn"
-              disabled={isUsageLoading || !hasPremiumAccess}
+              disabled={isUsageLoading || !hasChoicesRemaining}
             >
               No
             </button>
@@ -562,7 +567,7 @@ function SwipePage() {
             <button
               onClick={() => handleChoice("love")}
               className="love-btn"
-              disabled={isUsageLoading || !hasPremiumAccess}
+              disabled={isUsageLoading || !hasChoicesRemaining}
             >
               Yes
             </button>
@@ -570,7 +575,7 @@ function SwipePage() {
             <button
               onClick={() => handleChoice("maybe")}
               className="maybe-btn"
-              disabled={isUsageLoading || !hasPremiumAccess}
+              disabled={isUsageLoading || !hasChoicesRemaining}
             >
               Maybe
             </button>
