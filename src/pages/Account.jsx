@@ -144,6 +144,16 @@ function Account() {
   const [preferences, setPreferences] = useState(loadMatchPreferences);
   const [savedPreferences, setSavedPreferences] = useState(loadMatchPreferences);
   const [profileStatus, setProfileStatus] = useState("");
+  const profileInitial =
+    user?.displayName?.[0] || user?.email?.[0] || form.name?.[0] || "U";
+  const travelSummary =
+    preferences.travelMode === "walking"
+      ? `${preferences.maxDriveMinutes} min walk`
+      : `${preferences.maxDriveMinutes} min drive`;
+  const budgetSummary =
+    preferences.budgetPerPerson === 999
+      ? "No budget limit"
+      : `$${preferences.budgetPerPerson}/person`;
 
   useEffect(() => {
     if (!user) return;
@@ -281,8 +291,15 @@ function Account() {
       <Navbar />
 
       <main className="dashboard account-page">
-        <p className="eyebrow">Account</p>
-        <h1>Your FoodFinder account</h1>
+        <section className="account-shell">
+          <div className="account-hero">
+            <p className="eyebrow">UCF FoodFinder</p>
+            <h1>{user ? "Your food profile" : "Build your campus food profile"}</h1>
+            <p>
+              Keep your saved spots, UCF-area preferences, and matching defaults
+              in one place.
+            </p>
+          </div>
 
         {!isFirebaseConfigured ? (
           <section className="account-card">
@@ -293,88 +310,121 @@ function Account() {
             </p>
           </section>
         ) : user ? (
-          <section className="account-card">
-            <div className="account-profile">
-              {user.photoURL ? (
-                <img src={user.photoURL} alt={user.displayName || "Account"} />
-              ) : (
-                <span>{user.displayName?.[0] || user.email?.[0] || "U"}</span>
-              )}
-              <div>
-                <h2>{user.displayName || "Signed in"}</h2>
-                <p>{user.email}</p>
+          <section className="profile-dashboard">
+            <div className="profile-summary-panel">
+              <div className="account-profile">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || "Account"} />
+                ) : (
+                  <span>{profileInitial.toUpperCase()}</span>
+                )}
+                <div>
+                  <p className="eyebrow">Signed in</p>
+                  <h2>{user.displayName || "FoodFinder member"}</h2>
+                  <p>{user.email}</p>
+                </div>
               </div>
+
+              <div className="profile-stat-grid">
+                <article>
+                  <span>Area</span>
+                  <strong>{preferences.searchLocation || UCF_DEFAULT_LOCATION}</strong>
+                </article>
+                <article>
+                  <span>Travel</span>
+                  <strong>{travelSummary}</strong>
+                </article>
+                <article>
+                  <span>Budget</span>
+                  <strong>{budgetSummary}</strong>
+                </article>
+              </div>
+
+              <button className="secondary-btn logout-btn" onClick={signOutUser}>
+                Sign out
+              </button>
             </div>
 
             <form className="profile-preferences" onSubmit={handleSavePreferences}>
-              <h3>Preferences</h3>
+              <div className="profile-section-heading">
+                <p className="eyebrow">Matching defaults</p>
+                <h3>How FoodFinder should rank spots</h3>
+              </div>
 
-              <label>
-                Where do you want to eat?
-                <input
-                  onChange={(event) =>
-                    updatePreference("searchLocation", event.target.value)
-                  }
-                  placeholder="UCF, Knights Plaza, Waterford Lakes, or 32816"
-                  value={preferences.searchLocation}
-                />
-              </label>
+              <div className="profile-fieldset">
+                <h4>Campus area</h4>
+                <label>
+                  Where do you want to eat?
+                  <input
+                    onChange={(event) =>
+                      updatePreference("searchLocation", event.target.value)
+                    }
+                    placeholder="UCF, Knights Plaza, Waterford Lakes, or 32816"
+                    value={preferences.searchLocation}
+                  />
+                </label>
 
-              <label>
-                Where are you starting from?
-                <input
-                  onChange={(event) =>
-                    updatePreference("startAddress", event.target.value)
-                  }
-                  placeholder="Dorm, apartment, class, work, or a full address"
-                  value={preferences.startAddress}
-                />
-              </label>
+                <label>
+                  Where are you starting from?
+                  <input
+                    onChange={(event) =>
+                      updatePreference("startAddress", event.target.value)
+                    }
+                    placeholder="Dorm, apartment, class, work, or a full address"
+                    value={preferences.startAddress}
+                  />
+                </label>
+              </div>
 
-              <label>
-                Travel mode
-                <select
-                  onChange={(event) => updateTravelMode(event.target.value)}
-                  value={preferences.travelMode}
-                >
-                  {travelModeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="profile-fieldset">
+                <h4>Travel and budget</h4>
+                <div className="profile-two-column">
+                  <label>
+                    Travel mode
+                    <select
+                      onChange={(event) => updateTravelMode(event.target.value)}
+                      value={preferences.travelMode}
+                    >
+                      {travelModeOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-              <label>
-                Travel time preference
-                <select
-                  onChange={(event) =>
-                    updatePreference("maxDriveMinutes", Number(event.target.value))
-                  }
-                  value={preferences.maxDriveMinutes}
-                >
-                  {maxTravelOptions[preferences.travelMode].map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  <label>
+                    Travel time
+                    <select
+                      onChange={(event) =>
+                        updatePreference("maxDriveMinutes", Number(event.target.value))
+                      }
+                      value={preferences.maxDriveMinutes}
+                    >
+                      {maxTravelOptions[preferences.travelMode].map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
 
-              <label>
-                Budget per person
-                <select
-                  onChange={(event) =>
-                    updatePreference("budgetPerPerson", Number(event.target.value))
-                  }
-                  value={preferences.budgetPerPerson}
-                >
-                  <option value={15}>Under $15</option>
-                  <option value={40}>$15-$32 ish</option>
-                  <option value={70}>$32+</option>
-                  <option value={999}>No limit</option>
-                </select>
-              </label>
+                <label>
+                  Budget per person
+                  <select
+                    onChange={(event) =>
+                      updatePreference("budgetPerPerson", Number(event.target.value))
+                    }
+                    value={preferences.budgetPerPerson}
+                  >
+                    <option value={15}>Under $15</option>
+                    <option value={40}>$15-$32 ish</option>
+                    <option value={70}>$32+</option>
+                    <option value={999}>No limit</option>
+                  </select>
+                </label>
+              </div>
 
               <label className="toggle-row profile-toggle">
                 <input
@@ -394,110 +444,119 @@ function Account() {
                   Cancel
                 </button>
                 <button className="primary-btn" type="submit">
-                  Save
+                  Save profile
                 </button>
               </div>
             </form>
-
-            <button className="secondary-btn logout-btn" onClick={signOutUser}>
-              Sign out
-            </button>
           </section>
         ) : (
-          <section className="account-card">
-            <div className="auth-tabs" aria-label="Account mode">
-              <button
-                className={mode === "login" ? "active" : ""}
-                onClick={() => setMode("login")}
-                type="button"
-              >
-                Log in
-              </button>
-              <button
-                className={mode === "signup" ? "active" : ""}
-                onClick={() => setMode("signup")}
-                type="button"
-              >
-                Create account
-              </button>
+          <section className="auth-layout">
+            <div className="auth-copy-panel">
+              <p className="eyebrow">Campus-ready</p>
+              <h2>Save the places that fit your UCF routine.</h2>
+              <div className="auth-benefits">
+                <span>Saved shortlists</span>
+                <span>Walking or driving defaults</span>
+                <span>Budget and open-now preferences</span>
+              </div>
             </div>
 
-            <h2>{mode === "signup" ? "Create your account" : "Log in"}</h2>
-            <p>
-              Save spots and preferences to your FoodFinder account instead of
-              only this browser.
-            </p>
-
-            <form className="account-form" onSubmit={handleSubmit}>
-              {mode === "signup" && (
-                <label>
-                  Name
-                  <input
-                    autoComplete="name"
-                    onChange={(event) => updateField("name", event.target.value)}
-                    placeholder="Your name"
-                    value={form.name}
-                  />
-                </label>
-              )}
-
-              <label>
-                Email
-                <input
-                  autoComplete="email"
-                  onChange={(event) => updateField("email", event.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  type="email"
-                  value={form.email}
-                />
-              </label>
-
-              <label>
-                Password
-                <input
-                  autoComplete={
-                    mode === "signup" ? "new-password" : "current-password"
-                  }
-                  minLength={6}
-                  onChange={(event) => updateField("password", event.target.value)}
-                  placeholder="At least 6 characters"
-                  required
-                  type="password"
-                  value={form.password}
-                />
-              </label>
-
-              {error && <p className="account-error">{error}</p>}
-              {authStatus && <p className="account-success">{authStatus}</p>}
-
-              <button className="primary-btn" disabled={isSubmitting} type="submit">
-                {mode === "signup" ? "Create account" : "Log in"}
-              </button>
-
-              {mode === "login" && (
+            <div className="account-card">
+              <div className="auth-tabs" aria-label="Account mode">
                 <button
-                  className="forgot-password-btn"
-                  disabled={isSubmitting}
-                  onClick={handleForgotPassword}
+                  className={mode === "login" ? "active" : ""}
+                  onClick={() => setMode("login")}
                   type="button"
                 >
-                  Forgot password?
+                  Log in
                 </button>
-              )}
-            </form>
+                <button
+                  className={mode === "signup" ? "active" : ""}
+                  onClick={() => setMode("signup")}
+                  type="button"
+                >
+                  Create account
+                </button>
+              </div>
 
-            <div className="auth-divider">or</div>
+              <h2>{mode === "signup" ? "Create your account" : "Welcome back"}</h2>
+              <p>
+                Save spots and preferences to your FoodFinder account instead of
+                only this browser.
+              </p>
 
-            <button
-              className="secondary-btn"
-              disabled={isSubmitting}
-              onClick={handleGoogleSignIn}
-            >
-              Continue with Google
-            </button>
+              <form className="account-form" onSubmit={handleSubmit}>
+                {mode === "signup" && (
+                  <label>
+                    Name
+                    <input
+                      autoComplete="name"
+                      onChange={(event) => updateField("name", event.target.value)}
+                      placeholder="Your name"
+                      value={form.name}
+                    />
+                  </label>
+                )}
+
+                <label>
+                  Email
+                  <input
+                    autoComplete="email"
+                    onChange={(event) => updateField("email", event.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    type="email"
+                    value={form.email}
+                  />
+                </label>
+
+                <label>
+                  Password
+                  <input
+                    autoComplete={
+                      mode === "signup" ? "new-password" : "current-password"
+                    }
+                    minLength={6}
+                    onChange={(event) => updateField("password", event.target.value)}
+                    placeholder="At least 6 characters"
+                    required
+                    type="password"
+                    value={form.password}
+                  />
+                </label>
+
+                {error && <p className="account-error">{error}</p>}
+                {authStatus && <p className="account-success">{authStatus}</p>}
+
+                <button className="primary-btn" disabled={isSubmitting} type="submit">
+                  {mode === "signup" ? "Create account" : "Log in"}
+                </button>
+
+                {mode === "login" && (
+                  <button
+                    className="forgot-password-btn"
+                    disabled={isSubmitting}
+                    onClick={handleForgotPassword}
+                    type="button"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </form>
+
+              <div className="auth-divider">or</div>
+
+              <button
+                className="secondary-btn"
+                disabled={isSubmitting}
+                onClick={handleGoogleSignIn}
+              >
+                Continue with Google
+              </button>
+            </div>
           </section>
         )}
+        </section>
       </main>
     </div>
   );
