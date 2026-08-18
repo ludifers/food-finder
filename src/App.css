@@ -1542,6 +1542,47 @@ button {
   font-weight: 800;
 }
 
+.saved-spot-controls {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0 96px;
+}
+
+.saved-spot-controls label {
+  display: grid;
+  gap: 5px;
+  color: #59685f;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.saved-spot-controls select,
+.saved-spot-controls textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbdad0;
+  border-radius: 8px;
+  background: white;
+  color: #10231a;
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.saved-spot-controls textarea {
+  resize: vertical;
+}
+
+.saved-visited-toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  display: grid !important;
+}
+
+.saved-visited-toggle input {
+  width: 16px;
+  height: 16px;
+}
+
 .remove-saved-btn {
   margin: 10px 0 0 96px;
   border: 1px solid #fecdd3;

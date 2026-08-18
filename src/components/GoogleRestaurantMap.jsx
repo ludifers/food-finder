@@ -6,11 +6,19 @@ import {
 } from "../services/restaurantMapper";
 import {
   foodTypeSearchQueries,
+  campusNeedSearchQueries,
+  getSelectedCampusNeeds,
   getSelectedFoodTypes,
   getSelectedVibes,
 } from "../services/foodPreferences";
+import {
+  distanceInMiles,
+  getUcfLocationFallback,
+  isInsideUcfArea,
+  UCF_CENTER,
+  UCF_MAX_RADIUS_MILES,
+} from "../services/ucfArea";
 
-const UCF_CENTER = { lat: 28.6024, lng: -81.2001 };
 const MAP_DRAG_REFRESH_MILES = 4;
 
 function createConcurrencyLimiter(max) {
@@ -78,44 +86,6 @@ const FOOD_PLACE_TYPE_GROUPS = [
     "vietnamese_restaurant",
   ],
 ];
-const LOCATION_FALLBACKS = {
-  ucf: {
-    address: "University of Central Florida, Orlando, FL, USA",
-    center: UCF_CENTER,
-  },
-  "ucf, orlando, fl": {
-    address: "University of Central Florida, Orlando, FL, USA",
-    center: UCF_CENTER,
-  },
-  "knights plaza": {
-    address: "Knights Plaza, Orlando, FL 32816, USA",
-    center: { lat: 28.6077, lng: -81.1998 },
-  },
-  "university blvd": {
-    address: "University Blvd, Orlando, FL 32817, USA",
-    center: { lat: 28.5966, lng: -81.2153 },
-  },
-  "alafaya trail": {
-    address: "N Alafaya Trail, Orlando, FL 32826, USA",
-    center: { lat: 28.5863, lng: -81.2078 },
-  },
-  "waterford lakes": {
-    address: "Waterford Lakes, Orlando, FL, USA",
-    center: { lat: 28.5519, lng: -81.2003 },
-  },
-  "research park": {
-    address: "Central Florida Research Park, Orlando, FL, USA",
-    center: { lat: 28.5882, lng: -81.1994 },
-  },
-  oviedo: {
-    address: "Oviedo, FL, USA",
-    center: { lat: 28.6699, lng: -81.2081 },
-  },
-  "east orlando": {
-    address: "East Orlando, Orlando, FL, USA",
-    center: UCF_CENTER,
-  },
-};
 const placeFields = [
   "id",
   "displayName",
@@ -148,6 +118,7 @@ function displayHours(hours) {
 function buildPreferenceQuery(cravings, preferences) {
   const selectedFoodTypes = getSelectedFoodTypes(cravings);
   const selectedVibes = getSelectedVibes(cravings);
+  const selectedCampusNeeds = getSelectedCampusNeeds(cravings);
   const vibeQueries = {
     "Date night": "romantic",
     "Casual hangout": "casual",
@@ -168,31 +139,14 @@ function buildPreferenceQuery(cravings, preferences) {
           .join(" or ")
       : "restaurants";
   const vibeQuery = selectedVibes.map((item) => vibeQueries[item]).join(" ");
-
-  return [budgetQuery, vibeQuery, foodQuery]
+  const campusNeedQuery = selectedCampusNeeds
+    .map((item) => campusNeedSearchQueries[item])
     .filter(Boolean)
     .join(" ");
-}
 
-function distanceInMiles(origin, destination) {
-  if (!origin || !destination) {
-    return null;
-  }
-
-  const earthRadiusMiles = 3958.8;
-  const lat1 = (origin.lat * Math.PI) / 180;
-  const lat2 = (destination.lat * Math.PI) / 180;
-  const deltaLat = ((destination.lat - origin.lat) * Math.PI) / 180;
-  const deltaLng = ((destination.lng - origin.lng) * Math.PI) / 180;
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(deltaLng / 2) *
-      Math.sin(deltaLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return earthRadiusMiles * c;
+  return [budgetQuery, vibeQuery, campusNeedQuery, foodQuery]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function getPlacePoint(place) {
@@ -213,11 +167,7 @@ function filterPlacesNearCenter(places, center, shouldRestrict) {
     return places;
   }
 
-  return places.filter((place) => {
-    const miles = distanceInMiles(center, getPlacePoint(place));
-
-    return miles !== null && miles <= 25;
-  });
+  return places.filter((place) => isInsideUcfArea(getPlacePoint(place)));
 }
 
 function getPlaceKey(place) {
@@ -254,7 +204,7 @@ function dedupePlaces(places) {
 
 function normalizeLocationQuery(query) {
   const normalized = query.trim().toLowerCase();
-  const fallback = LOCATION_FALLBACKS[normalized];
+  const fallback = getUcfLocationFallback(normalized);
 
   if (fallback) {
     return fallback.address;
@@ -270,8 +220,8 @@ function geocodeLocation(query) {
       return;
     }
 
-    const normalized = query.trim().toLowerCase();
-    const fallback = LOCATION_FALLBACKS[normalized];
+  const normalized = query.trim().toLowerCase();
+  const fallback = getUcfLocationFallback(normalized);
 
     if (fallback) {
       resolve(fallback.center);
@@ -288,10 +238,21 @@ function geocodeLocation(query) {
       }
 
       const location = results[0].geometry.location;
-      resolve({
+      const point = {
         lat: location.lat(),
         lng: location.lng(),
-      });
+      };
+
+      if (!isInsideUcfArea(point)) {
+        reject(
+          new Error(
+            `FoodFinder only searches within ${UCF_MAX_RADIUS_MILES} miles of UCF.`
+          )
+        );
+        return;
+      }
+
+      resolve(point);
     });
   });
 }
@@ -320,10 +281,12 @@ async function findLocationCenter(query) {
     return null;
   }
 
-  return {
+  const point = {
     lat: location.lat(),
     lng: location.lng(),
   };
+
+  return isInsideUcfArea(point) ? point : null;
 }
 
 async function searchTextNewApi(center, query, locationQuery) {
@@ -509,7 +472,7 @@ function GoogleRestaurantMap({
           queryLabel,
           legacyNearbySearch
         );
-        let localPlaces = filterPlacesNearCenter(places, center, Boolean(center));
+        let localPlaces = filterPlacesNearCenter(places, UCF_CENTER, true);
 
         if (!localPlaces.length && center) {
           const nearbyPlaces = await searchNearbyNewApi(center).catch(() =>
@@ -572,11 +535,26 @@ function GoogleRestaurantMap({
           return null;
         });
 
+        if (locationQuery && !resolvedCenter) {
+          onStatusChange(
+            `FoodFinder only searches within ${UCF_MAX_RADIUS_MILES} miles of UCF, so showing campus-area results.`
+          );
+        }
+
         const mapCenter =
-          resolvedCenter || preferences.userLocation || UCF_CENTER;
+          resolvedCenter ||
+          (isInsideUcfArea(preferences.userLocation)
+            ? preferences.userLocation
+            : null) ||
+          UCF_CENTER;
         const searchCenter = locationQuery
-          ? resolvedCenter || null
+          ? resolvedCenter || UCF_CENTER
           : mapCenter;
+        const searchLocationQuery = locationQuery
+          ? resolvedCenter
+            ? locationQuery
+            : "UCF"
+          : locationQuery;
         const searchQuery = buildPreferenceQuery(cravings, preferences);
 
         if (ignore || !mapRef.current) {
@@ -596,7 +574,11 @@ function GoogleRestaurantMap({
           fullscreenControl: false,
         });
 
-        await loadRestaurantsForCenter(searchCenter, searchQuery, locationQuery);
+        await loadRestaurantsForCenter(
+          searchCenter,
+          searchQuery,
+          searchLocationQuery
+        );
 
         if (ignore) {
           return;
@@ -608,6 +590,16 @@ function GoogleRestaurantMap({
             lat: center.lat(),
             lng: center.lng(),
           };
+
+          if (!isInsideUcfArea(nextCenter)) {
+            mapInstance.current.panTo(UCF_CENTER);
+            onStatusChange(
+              `FoodFinder only searches within ${UCF_MAX_RADIUS_MILES} miles of UCF.`
+            );
+            loadRestaurantsForCenter(UCF_CENTER, searchQuery, "UCF");
+            return;
+          }
+
           const movedMiles = distanceInMiles(lastSearchCenter.current, nextCenter);
 
           if (movedMiles !== null && movedMiles < MAP_DRAG_REFRESH_MILES) {

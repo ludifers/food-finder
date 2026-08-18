@@ -1,14 +1,22 @@
 import { shouldUseGoogleProvider } from "./mapProvider";
 import {
+  getSelectedCampusNeeds,
   getSelectedFoodTypes,
+  restaurantMatchesCampusNeed,
   restaurantMatchesFoodType,
 } from "./foodPreferences";
+import {
+  distanceInMiles,
+  filterToUcfArea,
+  UCF_DEFAULT_LOCATION,
+} from "./ucfArea";
 
 export const defaultMatchPreferences = {
-  searchLocation: "UCF, Orlando, FL",
+  searchLocation: UCF_DEFAULT_LOCATION,
   startAddress: "",
   budgetPerPerson: 20,
   maxDriveMinutes: 15,
+  travelMode: "driving",
   openNowOnly: false,
   userLocation: null,
 };
@@ -30,10 +38,14 @@ function normalizeSearchLocation(searchLocation) {
   const normalized = String(searchLocation || "").trim().toLowerCase();
 
   if (previousBroadLocations.has(normalized)) {
-    return defaultMatchPreferences.searchLocation;
+    return UCF_DEFAULT_LOCATION;
   }
 
   return searchLocation;
+}
+
+function normalizeTravelMode(travelMode) {
+  return travelMode === "walking" ? "walking" : "driving";
 }
 
 export function loadMatchPreferences() {
@@ -43,6 +55,7 @@ export function loadMatchPreferences() {
     ...defaultMatchPreferences,
     ...stored,
     searchLocation: normalizeSearchLocation(stored.searchLocation),
+    travelMode: normalizeTravelMode(stored.travelMode),
   };
 }
 
@@ -61,27 +74,6 @@ function priceRangeForLevel(price) {
   return ranges[price] || null;
 }
 
-function distanceInMiles(origin, destination) {
-  if (!origin || !destination) {
-    return null;
-  }
-
-  const earthRadiusMiles = 3958.8;
-  const lat1 = (origin.lat * Math.PI) / 180;
-  const lat2 = (destination.lat * Math.PI) / 180;
-  const deltaLat = ((destination.lat - origin.lat) * Math.PI) / 180;
-  const deltaLng = ((destination.lng - origin.lng) * Math.PI) / 180;
-  const a =
-    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-    Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(deltaLng / 2) *
-      Math.sin(deltaLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return earthRadiusMiles * c;
-}
-
 function estimateDriveMinutes(miles) {
   if (!miles && miles !== 0) {
     return null;
@@ -90,10 +82,24 @@ function estimateDriveMinutes(miles) {
   return Math.max(4, Math.round(miles * 3.2 + 4));
 }
 
+function estimateWalkMinutes(miles) {
+  if (!miles && miles !== 0) {
+    return null;
+  }
+
+  return Math.max(3, Math.round(miles * 20));
+}
+
+function estimateTravelMinutes(miles, travelMode) {
+  return travelMode === "walking"
+    ? estimateWalkMinutes(miles)
+    : estimateDriveMinutes(miles);
+}
+
 export function getRestaurantDriveMinutes(restaurant, preferences) {
   const miles = distanceInMiles(preferences.userLocation, restaurant.location);
 
-  return estimateDriveMinutes(miles);
+  return estimateTravelMinutes(miles, preferences.travelMode);
 }
 
 function parsePriceRange(priceText) {
@@ -127,6 +133,20 @@ function foodTypeScore(restaurant, cravings = []) {
     : 0;
 }
 
+function campusNeedScore(restaurant, cravings = []) {
+  const selectedNeeds = getSelectedCampusNeeds(cravings);
+
+  if (!selectedNeeds.length) {
+    return 0;
+  }
+
+  return selectedNeeds.reduce(
+    (score, need) =>
+      score + (restaurantMatchesCampusNeed(restaurant, need) ? 10 : -3),
+    0
+  );
+}
+
 export function calculateMatchScore(restaurant, preferences, cravings = []) {
   const budget = Number(preferences.budgetPerPerson);
   const priceRange = parsePriceRange(
@@ -134,7 +154,10 @@ export function calculateMatchScore(restaurant, preferences, cravings = []) {
   );
   const driveMinutes = getRestaurantDriveMinutes(restaurant, preferences);
   const rating = Number(restaurant.rating) || 0;
-  let score = rating * 8 + foodTypeScore(restaurant, cravings);
+  let score =
+    rating * 8 +
+    foodTypeScore(restaurant, cravings) +
+    campusNeedScore(restaurant, cravings);
 
   if (priceRange && budget !== 999) {
     if (priceRange.low <= budget) {
@@ -148,8 +171,18 @@ export function calculateMatchScore(restaurant, preferences, cravings = []) {
 
   if (driveMinutes) {
     score += driveMinutes <= Number(preferences.maxDriveMinutes)
-      ? 16
+      ? preferences.travelMode === "walking"
+        ? 24
+        : 16
       : -Math.min(16, driveMinutes - Number(preferences.maxDriveMinutes));
+  }
+
+  if (restaurant.tags?.includes("Cheap eats") && budget <= 20) {
+    score += 10;
+  }
+
+  if (restaurant.tags?.includes("Late night")) {
+    score += 5;
   }
 
   if (preferences.openNowOnly && restaurant.hours === "Open now") {
@@ -190,6 +223,11 @@ function buildDirectionsUrl(restaurant, preferences) {
     params.set("origin", preferences.startAddress);
   }
 
+  params.set(
+    "travelmode",
+    preferences.travelMode === "walking" ? "walking" : "driving"
+  );
+
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
@@ -197,9 +235,9 @@ export function applyMatchPreferences(restaurant, preferences) {
   const priceRange = priceRangeForLevel(restaurant.price);
   const budget = Number(preferences.budgetPerPerson);
   const miles = distanceInMiles(preferences.userLocation, restaurant.location);
-  const driveMinutes = estimateDriveMinutes(miles);
-  const overDriveBy = driveMinutes
-    ? driveMinutes - Number(preferences.maxDriveMinutes)
+  const travelMinutes = estimateTravelMinutes(miles, preferences.travelMode);
+  const overDriveBy = travelMinutes
+    ? travelMinutes - Number(preferences.maxDriveMinutes)
     : null;
   const budgetText = priceRange
     ? `Estimated $${priceRange[0]}-$${priceRange[1]} per person`
@@ -209,12 +247,13 @@ export function applyMatchPreferences(restaurant, preferences) {
       ? `Fits your $${budget} budget`
       : `$${priceRange[0] - budget} over your budget`
     : "Budget fit unavailable";
-  const driveText = driveMinutes
-    ? `${driveMinutes} minutes by car`
+  const travelLabel = preferences.travelMode === "walking" ? "walk" : "drive";
+  const driveText = travelMinutes
+    ? `${travelMinutes} minute ${travelLabel}`
     : preferences.startAddress
       ? "Open directions for live commute"
       : "Add a start point for commute";
-  const driveFit = driveMinutes
+  const driveFit = travelMinutes
     ? overDriveBy <= 0
       ? ""
       : `${overDriveBy} mins more than you are looking for`
@@ -225,16 +264,17 @@ export function applyMatchPreferences(restaurant, preferences) {
   const baseMatchNote = (
     restaurant.matchNote || "Saved restaurant from your FoodFinder list."
   )
-    .replace(/\s*Budget target: [^.]+\. Drive target: [^.]+\./g, "")
+    .replace(/\s*Budget target: [^.]+\. (Drive|Walk) target: [^.]+\./g, "")
     .trim();
 
   return {
     ...restaurant,
     matchScore: calculateMatchScore(restaurant, preferences, restaurant.cravings),
-    driveMinutes,
+    driveMinutes: travelMinutes,
+    travelMinutes,
     withinDriveTarget:
-      driveMinutes === null ||
-      driveMinutes <= Number(preferences.maxDriveMinutes),
+      travelMinutes === null ||
+      travelMinutes <= Number(preferences.maxDriveMinutes),
     distance,
     priceEstimate: restaurant.priceEstimate || budgetText,
     budgetNote: `${budgetText}. ${budgetFit}.`,
@@ -243,6 +283,12 @@ export function applyMatchPreferences(restaurant, preferences) {
     mapsUrl: buildDirectionsUrl(restaurant, preferences) || restaurant.mapsUrl,
     matchNote:
       `${baseMatchNote} Budget target: $${budget}/person. ` +
-      `Drive target: ${preferences.maxDriveMinutes} minutes.`,
+      `${preferences.travelMode === "walking" ? "Walk" : "Drive"} target: ${
+        preferences.maxDriveMinutes
+      } minutes.`,
   };
+}
+
+export function filterRestaurantsToUcfArea(restaurants) {
+  return filterToUcfArea(restaurants);
 }

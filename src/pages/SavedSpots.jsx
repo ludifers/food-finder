@@ -14,6 +14,8 @@ import {
   getSavedRestaurants,
   removeRestaurant,
   removeRestaurantLocally,
+  updateSavedRestaurant,
+  updateSavedRestaurantLocally,
 } from "../services/userDataService";
 
 function getRestaurantKey(restaurant, index) {
@@ -56,11 +58,25 @@ const filterOptions = [
   { label: "All", value: "all" },
   { label: "Liked", value: "liked" },
   { label: "Maybe", value: "maybe" },
+  { label: "To try", value: "to-try" },
+  { label: "Date night", value: "date-night" },
+  { label: "Cheap", value: "cheap" },
+  { label: "Late", value: "late-night" },
+  { label: "Visited", value: "visited" },
   { label: "Price", value: "price" },
   { label: "Rating", value: "rating" },
 ];
 
-function SavedSpotCard({ isSelected, restaurant, onOpen }) {
+const savedListOptions = [
+  "To try",
+  "Date night",
+  "Cheap eats",
+  "Late night",
+  "Study spot",
+  "Group meal",
+];
+
+function SavedSpotCard({ isSelected, onUpdate, restaurant, onOpen }) {
   const isLiked = restaurant.saveType === "Liked";
   const statusIcon = isLiked ? "♥" : "👍";
 
@@ -100,6 +116,40 @@ function SavedSpotCard({ isSelected, restaurant, onOpen }) {
         </div>
       </button>
 
+      <div className="saved-spot-controls">
+        <label>
+          List
+          <select
+            onChange={(event) => onUpdate(restaurant, { savedList: event.target.value })}
+            value={restaurant.savedList || "To try"}
+          >
+            {savedListOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="saved-visited-toggle">
+          <input
+            checked={Boolean(restaurant.visited)}
+            onChange={(event) =>
+              onUpdate(restaurant, { visited: event.target.checked })
+            }
+            type="checkbox"
+          />
+          Visited
+        </label>
+
+        <textarea
+          onBlur={(event) => onUpdate(restaurant, { note: event.target.value })}
+          placeholder="Add a note"
+          rows={2}
+          defaultValue={restaurant.note || ""}
+        />
+      </div>
+
       <button
         className="remove-saved-btn"
         onClick={() => restaurant.onRemove?.()}
@@ -116,6 +166,7 @@ function SavedList({
   emptyText,
   onOpenRestaurant,
   onRemoveRestaurant,
+  onUpdateRestaurant,
   restaurants,
 }) {
   return (
@@ -129,6 +180,7 @@ function SavedList({
               isSelected={activeRestaurant?.id === restaurant.id}
               key={getRestaurantKey(restaurant, index)}
               onOpen={() => onOpenRestaurant(restaurant)}
+              onUpdate={onUpdateRestaurant}
               restaurant={{
                 ...restaurant,
                 onRemove: () => onRemoveRestaurant(restaurant),
@@ -178,6 +230,36 @@ function SavedSpots() {
 
     if (activeFilter === "maybe") {
       return nextRestaurants.filter((restaurant) => restaurant.saveType === "Maybe");
+    }
+
+    if (activeFilter === "to-try") {
+      return nextRestaurants.filter(
+        (restaurant) => !restaurant.visited && (restaurant.savedList || "To try") === "To try"
+      );
+    }
+
+    if (activeFilter === "date-night") {
+      return nextRestaurants.filter((restaurant) => restaurant.savedList === "Date night");
+    }
+
+    if (activeFilter === "cheap") {
+      return nextRestaurants.filter(
+        (restaurant) =>
+          restaurant.savedList === "Cheap eats" ||
+          restaurant.tags?.includes("Cheap eats")
+      );
+    }
+
+    if (activeFilter === "late-night") {
+      return nextRestaurants.filter(
+        (restaurant) =>
+          restaurant.savedList === "Late night" ||
+          restaurant.tags?.includes("Late night")
+      );
+    }
+
+    if (activeFilter === "visited") {
+      return nextRestaurants.filter((restaurant) => restaurant.visited);
     }
 
     if (activeFilter === "price") {
@@ -242,6 +324,20 @@ function SavedSpots() {
     navigate(`/saved/${encodeURIComponent(getRestaurantPathId(restaurant))}`);
   }
 
+  function handleUpdateRestaurant(restaurant, updates) {
+    updateSavedRestaurantLocally(user.uid, restaurant.id, updates);
+    updateSavedRestaurant(user.uid, restaurant.id, updates).catch(() => {});
+    setLocalVersion((current) => current + 1);
+    setRemoteRestaurants((current) =>
+      current.map((item) =>
+        item.id === restaurant.id ? { ...item, ...updates } : item
+      )
+    );
+    setActiveRestaurant((current) =>
+      current?.id === restaurant.id ? { ...current, ...updates } : current
+    );
+  }
+
   function handleFilterChange(nextFilter) {
     setActiveFilter(nextFilter);
     setActiveRestaurant(null);
@@ -277,9 +373,9 @@ function SavedSpots() {
           <section className="saved-panel-header">
             <p className="eyebrow">Short list</p>
             <h1>Saved spots</h1>
-            <p>
-              Your liked and maybe restaurants from matching, mapped together.
-            </p>
+              <p>
+              Your UCF short list with notes, visit status, and quick filters.
+              </p>
 
             <div className="saved-filter-bar" aria-label="Saved spot filters">
               {filterOptions.map((option) => (
@@ -312,6 +408,7 @@ function SavedSpots() {
               emptyText="No saved spots match this filter yet."
               onOpenRestaurant={handleOpenRestaurant}
               onRemoveRestaurant={handleRemoveRestaurant}
+              onUpdateRestaurant={handleUpdateRestaurant}
               restaurants={filteredRestaurants}
             />
           )}

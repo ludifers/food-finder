@@ -1,9 +1,54 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import {
+  loadMatchPreferences,
+  saveMatchPreferences,
+} from "../services/matchPreferences";
+import { UCF_CENTER, UCF_DEFAULT_LOCATION } from "../services/ucfArea";
 
 function Dashboard() {
   const navigate = useNavigate();
   const savedCravings = JSON.parse(localStorage.getItem("cravings")) || [];
+  const [searchInput, setSearchInput] = useState("");
+
+  function startSearch(nextLocation) {
+    const trimmedLocation = nextLocation.trim() || UCF_DEFAULT_LOCATION;
+    const preferences = {
+      ...loadMatchPreferences(),
+      searchLocation: trimmedLocation,
+    };
+
+    saveMatchPreferences(preferences);
+    localStorage.setItem("lastSearchLocation", trimmedLocation);
+
+    navigate("/discover", {
+      state: {
+        locationQuery: trimmedLocation,
+      },
+    });
+  }
+
+  function applyQuickStart(nextPreferences, nextCravings = []) {
+    const preferences = {
+      ...loadMatchPreferences(),
+      searchLocation: UCF_DEFAULT_LOCATION,
+      ...nextPreferences,
+    };
+    const mergedCravings = Array.from(
+      new Set([...savedCravings, ...nextCravings])
+    );
+
+    localStorage.setItem("cravings", JSON.stringify(mergedCravings));
+    saveMatchPreferences(preferences);
+
+    navigate("/discover", {
+      state: {
+        locationQuery: preferences.searchLocation,
+        matchFromQuiz: true,
+      },
+    });
+  }
 
   return (
     <div>
@@ -77,6 +122,40 @@ function Dashboard() {
           </button>
         </section>
 
+        <section className="preference-strip">
+          <div>
+            <h2>Campus quick start</h2>
+            <p>Choose a UCF baseline and start with results tuned to student needs.</p>
+          </div>
+          <div className="hero-actions">
+            <button
+              className="secondary-btn"
+              onClick={() =>
+                applyQuickStart({
+                  startAddress: UCF_DEFAULT_LOCATION,
+                  travelMode: "walking",
+                  maxDriveMinutes: 15,
+                  userLocation: UCF_CENTER,
+                })
+              }
+            >
+              Walking from campus
+            </button>
+            <button
+              className="secondary-btn"
+              onClick={() => applyQuickStart({ budgetPerPerson: 15 }, ["Cheap eats"])}
+            >
+              Cheap eats
+            </button>
+            <button
+              className="secondary-btn"
+              onClick={() => applyQuickStart({ openNowOnly: true }, ["Late night"])}
+            >
+              Open now
+            </button>
+          </div>
+        </section>
+
         <section className="matches-section">
           <div className="section-heading">
             <div>
@@ -105,10 +184,20 @@ function Dashboard() {
             <h2>Find food near campus</h2>
             <p>Prefer to browse? Search a UCF-area spot and keep the quiz in your pocket.</p>
           </div>
-          <div className="search-shell">
-            <input placeholder="Search UCF, Knights Plaza, or Waterford Lakes" />
-            <button onClick={() => navigate("/discover")}>Search</button>
-          </div>
+          <form
+            className="search-shell"
+            onSubmit={(event) => {
+              event.preventDefault();
+              startSearch(searchInput);
+            }}
+          >
+            <input
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search UCF, Knights Plaza, or Waterford Lakes"
+              value={searchInput}
+            />
+            <button type="submit">Search</button>
+          </form>
         </section>
       </main>
     </div>

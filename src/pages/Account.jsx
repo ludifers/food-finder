@@ -16,6 +16,13 @@ import {
   getUserPreferences,
   saveUserPreferences,
 } from "../services/userDataService";
+import {
+  isInsideUcfArea,
+  maxTravelOptions,
+  travelModeOptions,
+  UCF_CENTER,
+  UCF_DEFAULT_LOCATION,
+} from "../services/ucfArea";
 
 function getAuthErrorMessage(error) {
   const messages = {
@@ -195,6 +202,14 @@ function Account() {
     }));
   }
 
+  function updateTravelMode(nextMode) {
+    setPreferences((current) => ({
+      ...current,
+      travelMode: nextMode,
+      maxDriveMinutes: nextMode === "walking" ? 15 : 15,
+    }));
+  }
+
   async function handleSavePreferences(event) {
     event.preventDefault();
     setProfileStatus("Saving preferences...");
@@ -203,10 +218,11 @@ function Account() {
       const { formattedAddress, userLocation } = await geocodeAddress(
         preferences.startAddress
       );
+      const isUcfStart = !userLocation || isInsideUcfArea(userLocation);
       const nextPreferences = {
         ...preferences,
-        startAddress: formattedAddress,
-        userLocation,
+        startAddress: isUcfStart ? formattedAddress : UCF_DEFAULT_LOCATION,
+        userLocation: isUcfStart ? userLocation : UCF_CENTER,
       };
 
       saveMatchPreferences(nextPreferences);
@@ -217,7 +233,11 @@ function Account() {
         saveUserPreferences(user.uid, nextPreferences).catch(() => {});
       }
 
-      setProfileStatus("Preferences saved. Drive estimates will update on Discover.");
+      setProfileStatus(
+        isUcfStart
+          ? "Preferences saved. Travel estimates will update on Discover."
+          : "That start point is outside the UCF area, so campus was saved instead."
+      );
     } catch (saveError) {
       setProfileStatus(saveError.message);
     }
@@ -284,17 +304,32 @@ function Account() {
               </label>
 
               <label>
-                Distance preference
+                Travel mode
+                <select
+                  onChange={(event) => updateTravelMode(event.target.value)}
+                  value={preferences.travelMode}
+                >
+                  {travelModeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Travel time preference
                 <select
                   onChange={(event) =>
                     updatePreference("maxDriveMinutes", Number(event.target.value))
                   }
                   value={preferences.maxDriveMinutes}
                 >
-                  <option value={10}>10 minute drive</option>
-                  <option value={15}>15 minute drive</option>
-                  <option value={25}>25 minute drive</option>
-                  <option value={40}>40 minute drive</option>
+                  {maxTravelOptions[preferences.travelMode].map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
 

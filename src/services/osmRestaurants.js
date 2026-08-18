@@ -1,20 +1,16 @@
+import {
+  getUcfLocationFallback,
+  isInsideUcfArea,
+  UCF_CENTER,
+  UCF_DEFAULT_LOCATION,
+  UCF_MAX_RADIUS_MILES,
+} from "./ucfArea";
+
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
-const DEFAULT_CENTER = { lat: 28.6024, lng: -81.2001, label: "UCF, Orlando, FL" };
+const DEFAULT_CENTER = { ...UCF_CENTER, label: UCF_DEFAULT_LOCATION };
 const DEFAULT_IMAGE =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 680'%3E%3Crect width='900' height='680' fill='%23f6faf7'/%3E%3Ccircle cx='450' cy='300' r='92' fill='%23167a4a' opacity='.22'/%3E%3Cpath d='M300 410h300v42H300z' fill='%2310231a' opacity='.18'/%3E%3Cpath d='M352 276h196l38 134H314z' fill='%23ffffff' stroke='%23cbdad0' stroke-width='18'/%3E%3C/svg%3E";
-
-const LOCATION_FALLBACKS = {
-  ucf: { lat: 28.6024, lng: -81.2001, label: "UCF, Orlando, FL" },
-  "ucf, orlando, fl": { lat: 28.6024, lng: -81.2001, label: "UCF, Orlando, FL" },
-  "knights plaza": { lat: 28.6077, lng: -81.1998, label: "Knights Plaza, Orlando, FL" },
-  "university blvd": { lat: 28.5966, lng: -81.2153, label: "University Blvd, Orlando, FL" },
-  "alafaya trail": { lat: 28.5863, lng: -81.2078, label: "Alafaya Trail, Orlando, FL" },
-  "waterford lakes": { lat: 28.5519, lng: -81.2003, label: "Waterford Lakes, Orlando, FL" },
-  "research park": { lat: 28.5882, lng: -81.1994, label: "Central Florida Research Park" },
-  oviedo: { lat: 28.6699, lng: -81.2081, label: "Oviedo, FL" },
-  "east orlando": { lat: 28.6024, lng: -81.2001, label: "East Orlando, FL" },
-};
 
 function timeoutSignal(ms) {
   const controller = new AbortController();
@@ -24,14 +20,6 @@ function timeoutSignal(ms) {
     clear: () => window.clearTimeout(timeoutId),
     signal: controller.signal,
   };
-}
-
-function normalizeLocationQuery(query) {
-  return query.trim().toLowerCase();
-}
-
-function fallbackCenter(query) {
-  return LOCATION_FALLBACKS[normalizeLocationQuery(query)];
 }
 
 function cuisineFromTags(tags) {
@@ -88,10 +76,13 @@ export async function geocodeOsmLocation(query) {
     return DEFAULT_CENTER;
   }
 
-  const fallback = fallbackCenter(query);
+  const fallback = getUcfLocationFallback(query);
 
   if (fallback) {
-    return fallback;
+    return {
+      ...fallback.center,
+      label: fallback.address,
+    };
   }
 
   const params = new URLSearchParams({
@@ -115,11 +106,19 @@ export async function geocodeOsmLocation(query) {
     throw new Error("OpenStreetMap could not find that location.");
   }
 
-  return {
+  const center = {
     lat: Number(result.lat),
     lng: Number(result.lon),
     label: result.display_name,
   };
+
+  if (!isInsideUcfArea(center)) {
+    throw new Error(
+      `FoodFinder only searches within ${UCF_MAX_RADIUS_MILES} miles of UCF.`
+    );
+  }
+
+  return center;
 }
 
 export async function searchOsmRestaurants(center, cravings = []) {
@@ -138,7 +137,8 @@ export async function searchOsmRestaurants(center, cravings = []) {
 
   return elements
     .map((element, index) => mapOsmElementToRestaurant(element, index, cravings))
-    .filter(Boolean);
+    .filter(Boolean)
+    .filter((restaurant) => isInsideUcfArea(restaurant.location));
 }
 
 export function mapOsmElementToRestaurant(element, index, cravings = []) {

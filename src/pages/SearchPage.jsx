@@ -5,24 +5,17 @@ import {
   loadMatchPreferences,
   saveMatchPreferences,
 } from "../services/matchPreferences";
-
-const starterLocations = [
-  "UCF",
-  "Knights Plaza",
-  "University Blvd",
-  "Alafaya Trail",
-  "Waterford Lakes",
-  "Research Park",
-  "Oviedo",
-  "East Orlando",
-];
+import {
+  normalizeUcfSearchLocation,
+  ucfStarterLocations,
+} from "../services/ucfArea";
 
 function SearchPage() {
   const navigate = useNavigate();
   const [locationInput, setLocationInput] = useState("");
 
   function startSearch(nextLocation) {
-    const trimmedLocation = nextLocation.trim();
+    const trimmedLocation = normalizeUcfSearchLocation(nextLocation);
 
     if (!trimmedLocation) {
       return;
@@ -76,7 +69,7 @@ function SearchPage() {
           </form>
 
           <div className="starter-location-grid">
-            {starterLocations.map((location) => (
+            {ucfStarterLocations.map((location) => (
               <button
                 key={location}
                 onClick={() => startSearch(location)}

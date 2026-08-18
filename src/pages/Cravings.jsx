@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import {
+  campusNeedOptions,
   foodTypeOptions,
   getValidCravings,
   vibeOptions,
@@ -16,6 +17,13 @@ import {
   getUserPreferences,
   saveUserPreferences,
 } from "../services/userDataService";
+import {
+  isInsideUcfArea,
+  maxTravelOptions,
+  travelModeOptions,
+  UCF_CENTER,
+  UCF_DEFAULT_LOCATION,
+} from "../services/ucfArea";
 
 const budgetOptions = [
   { label: "Under $15", value: 15 },
@@ -81,6 +89,14 @@ function Cravings() {
     }));
   }
 
+  function updateTravelMode(nextMode) {
+    setPreferences((current) => ({
+      ...current,
+      travelMode: nextMode,
+      maxDriveMinutes: nextMode === "walking" ? 15 : 15,
+    }));
+  }
+
   function toggleCraving(nextValue) {
     setSelected((current) =>
       current.includes(nextValue)
@@ -99,23 +115,40 @@ function Cravings() {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const userLocation = {
+        let userLocation = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
         };
+        const isUcfAreaLocation = isInsideUcfArea(userLocation);
+
+        if (!isUcfAreaLocation) {
+          userLocation = UCF_CENTER;
+        }
+
         const fallbackAddress = `Current location (${userLocation.lat.toFixed(5)}, ${userLocation.lng.toFixed(5)})`;
 
         setPreferences((current) => ({
           ...current,
-          searchLocation: fallbackAddress,
+          searchLocation: isUcfAreaLocation ? fallbackAddress : UCF_DEFAULT_LOCATION,
+          startAddress: isUcfAreaLocation ? current.startAddress : UCF_DEFAULT_LOCATION,
+          userLocation,
         }));
-        setLocationStatus("Current location added.");
+        setLocationStatus(
+          isUcfAreaLocation
+            ? "Current location added."
+            : "Current location is outside the UCF area, so campus was added."
+        );
+
+        if (!isUcfAreaLocation) {
+          return;
+        }
 
         reverseGeocodeLocation(userLocation)
           .then((address) => {
             setPreferences((current) => ({
               ...current,
               searchLocation: address,
+              userLocation,
             }));
             setLocationStatus("Current address added.");
           })
@@ -159,7 +192,7 @@ function Cravings() {
           <p className="eyebrow">Match preferences</p>
           <h1>Build your food match profile.</h1>
           <p>
-            Set your UCF-area starting point, budget, drive target, and cravings
+            Set your UCF-area starting point, budget, travel target, and cravings
             so FoodFinder can score restaurants like a real matchmaker.
           </p>
         </section>
@@ -189,6 +222,21 @@ function Cravings() {
             <h2>What is the vibe tonight?</h2>
             <div className="cravings-grid four-choice-grid">
               {vibeOptions.map((option) => (
+                <button
+                  key={option}
+                  className={selected.includes(option) ? "selected-craving" : ""}
+                  onClick={() => toggleCraving(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="quiz-block">
+            <h2>Student needs</h2>
+            <div className="cravings-grid four-choice-grid">
+              {campusNeedOptions.map((option) => (
                 <button
                   key={option}
                   className={selected.includes(option) ? "selected-craving" : ""}
@@ -236,19 +284,37 @@ function Cravings() {
 
           <div className="quiz-block preference-grid drive-grid">
             <label>
-              Max drive time
+              Travel mode
+              <select
+                value={preferences.travelMode}
+                onChange={(event) => updateTravelMode(event.target.value)}
+              >
+                {travelModeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Max {preferences.travelMode === "walking" ? "walk" : "drive"} time
               <select
                 value={preferences.maxDriveMinutes}
                 onChange={(event) =>
                   updatePreference("maxDriveMinutes", Number(event.target.value))
                 }
               >
-                <option value={10}>10 minutes</option>
-                <option value={15}>15 minutes</option>
-                <option value={25}>25 minutes</option>
-                <option value={40}>40 minutes</option>
+                {maxTravelOptions[preferences.travelMode].map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
             </label>
+          </div>
+
+          <div className="quiz-block">
 
             <label className="toggle-row">
               <input
@@ -268,7 +334,8 @@ function Cravings() {
               {preferences.budgetPerPerson === 999
                 ? "no budget limit"
                 : `$${preferences.budgetPerPerson}/person`}{" "}
-              / {preferences.maxDriveMinutes} min drive
+              / {preferences.maxDriveMinutes} min{" "}
+              {preferences.travelMode === "walking" ? "walk" : "drive"}
             </p>
             {saveStatus && <p className="helper-text">{saveStatus}</p>}
             <button className="primary-btn" onClick={savePreferences}>

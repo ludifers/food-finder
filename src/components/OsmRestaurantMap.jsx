@@ -4,6 +4,7 @@ import {
   geocodeOsmLocation,
   searchOsmRestaurants,
 } from "../services/osmRestaurants";
+import { UCF_DEFAULT_LOCATION } from "../services/ucfArea";
 
 const DEFAULT_CENTER = { lat: 28.6024, lng: -81.2001 };
 
@@ -33,7 +34,19 @@ function OsmRestaurantMap({
       onStatusChange("Loading OpenStreetMap restaurants...");
 
       try {
-        const nextCenter = await geocodeOsmLocation(locationQuery || "UCF");
+        let nextCenter;
+
+        try {
+          nextCenter = await geocodeOsmLocation(locationQuery || "UCF");
+        } catch (error) {
+          if (!String(error.message).includes("within")) {
+            throw error;
+          }
+
+          onStatusChange(`${error.message} Showing UCF campus results instead.`);
+          nextCenter = await geocodeOsmLocation(UCF_DEFAULT_LOCATION);
+        }
+
         const nextRestaurants = await searchOsmRestaurants(nextCenter, cravings);
 
         if (ignore || currentRequest !== requestId.current) {

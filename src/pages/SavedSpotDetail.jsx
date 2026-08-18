@@ -202,6 +202,12 @@ function SavedSpotDetail() {
                 <p>
                   <strong>Saved food match.</strong> {restaurant.matchNote}
                 </p>
+                <p>
+                  {[restaurant.savedList || "To try", restaurant.visited ? "Visited" : "Not visited"]
+                    .filter(Boolean)
+                    .join(" / ")}
+                </p>
+                {restaurant.note && <p>{restaurant.note}</p>}
               </div>
 
               <div className="insight-badge" aria-hidden="true">
@@ -228,9 +234,9 @@ function SavedSpotDetail() {
               </article>
 
               <article>
-                <span className="fact-icon">CAR</span>
+                <span className="fact-icon">TRV</span>
                 <div>
-                  <h4>Drive</h4>
+                  <h4>Travel</h4>
                   <p>{restaurant.driveTime}</p>
                   {restaurant.driveNote && (
                     <small className="status-warn">{restaurant.driveNote}</small>

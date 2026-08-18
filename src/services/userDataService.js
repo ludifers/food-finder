@@ -57,6 +57,22 @@ export function removeRestaurantLocally(userId, restaurantId) {
   localStorage.setItem(localSavedKey(userId), JSON.stringify(savedRestaurants));
 }
 
+export function updateSavedRestaurantLocally(userId, restaurantId, updates) {
+  if (!userId || !restaurantId) return;
+
+  const savedRestaurants = getLocalSavedRestaurants(userId).map((restaurant) =>
+    restaurant.id === restaurantId
+      ? stripUndefined({
+          ...restaurant,
+          ...updates,
+          updatedAt: new Date().toISOString(),
+        })
+      : restaurant
+  );
+
+  localStorage.setItem(localSavedKey(userId), JSON.stringify(savedRestaurants));
+}
+
 export async function getSavedRestaurants(userId) {
   if (!db) return [];
   const snapshot = await getDocs(collection(db, "users", userId, "saved"));
@@ -98,6 +114,19 @@ export async function saveRestaurant(userId, restaurant, saveType) {
 export async function removeRestaurant(userId, restaurantId) {
   if (!db || !restaurantId) return;
   await deleteDoc(doc(db, "users", userId, "saved", restaurantId));
+}
+
+export async function updateSavedRestaurant(userId, restaurantId, updates) {
+  if (!db || !restaurantId) return;
+
+  await setDoc(
+    doc(db, "users", userId, "saved", restaurantId),
+    stripUndefined({
+      ...updates,
+      updatedAt: serverTimestamp(),
+    }),
+    { merge: true }
+  );
 }
 
 export async function getUserPreferences(userId) {

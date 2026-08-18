@@ -16,9 +16,11 @@ import {
 import {
   applyMatchPreferences,
   calculateMatchScore,
+  filterRestaurantsToUcfArea,
   getRestaurantDriveMinutes,
   loadMatchPreferences,
 } from "../services/matchPreferences";
+import { UCF_CENTER } from "../services/ucfArea";
 import {
   saveRestaurant,
   saveRestaurantLocally,
@@ -59,7 +61,19 @@ function SwipePage() {
     () => getValidCravings(JSON.parse(localStorage.getItem("cravings")) || []),
     []
   );
-  const matchPreferences = useMemo(() => loadMatchPreferences(), []);
+  const matchPreferences = useMemo(() => {
+    const preferences = loadMatchPreferences();
+
+    if (preferences.travelMode === "walking" && !preferences.userLocation) {
+      return {
+        ...preferences,
+        startAddress: preferences.startAddress || "UCF, Orlando, FL",
+        userLocation: UCF_CENTER,
+      };
+    }
+
+    return preferences;
+  }, []);
 
   const [liveRestaurants, setLiveRestaurants] = useState([]);
   const [hasLoadedPlaces, setHasLoadedPlaces] = useState(false);
@@ -76,6 +90,7 @@ function SwipePage() {
   const [, setMaybe] = useState([]);
   const [passed, setPassed] = useState([]);
   const [saveError, setSaveError] = useState("");
+  const [mapStatus, setMapStatus] = useState("");
   const RestaurantMap = shouldUseGoogleProvider()
     ? GoogleRestaurantMap
     : shouldUseOsmProvider()
@@ -85,12 +100,13 @@ function SwipePage() {
 
   const matchedRestaurants = useMemo(
     () => {
-      const openNowMatches = liveRestaurants.filter((item) =>
+      const ucfRestaurants = filterRestaurantsToUcfArea(liveRestaurants);
+      const openNowMatches = ucfRestaurants.filter((item) =>
         matchesOpenNowPreference(item, matchPreferences)
       );
       const openFilteredRestaurants = openNowMatches.length
         ? openNowMatches
-        : liveRestaurants;
+        : ucfRestaurants;
       const restaurantsToShow = applyDriveTimePreference(
         openFilteredRestaurants,
         matchPreferences
@@ -125,7 +141,9 @@ function SwipePage() {
     setIndex(nextIndex);
     setPhotoIndex(0);
   }, []);
-  const handleStatusChange = useCallback(() => {}, []);
+  const handleStatusChange = useCallback((message) => {
+    setMapStatus(message);
+  }, []);
 
   function movePhoto(direction) {
     setPhotoIndex((current) => {
@@ -205,12 +223,25 @@ function SwipePage() {
               <h1>{hasLoadedPlaces ? "No matches found" : "Loading restaurants"}</h1>
               <p>
                 {hasLoadedPlaces
-                  ? "Try changing your preferences so FoodFinder can widen the UCF-area list."
+                  ? "No UCF-area restaurants matched this filter. Try Waterford Lakes, add a few more minutes, or turn off Open now only."
                   : `FoodFinder is loading real restaurants from ${mapProviderName}.`}
               </p>
-              <button className="primary-btn" onClick={() => navigate("/cravings")}>
-                Adjust preferences
-              </button>
+              {mapStatus && <p className="helper-text">{mapStatus}</p>}
+              <div className="hero-actions">
+                <button className="primary-btn" onClick={() => navigate("/cravings")}>
+                  Adjust preferences
+                </button>
+                <button
+                  className="secondary-btn"
+                  onClick={() =>
+                    navigate("/discover", {
+                      state: { locationQuery: "Waterford Lakes" },
+                    })
+                  }
+                >
+                  Try Waterford Lakes
+                </button>
+              </div>
             </div>
           </aside>
 
@@ -319,9 +350,9 @@ function SwipePage() {
               </article>
 
               <article>
-                <span className="fact-icon">CAR</span>
+                <span className="fact-icon">TRV</span>
                 <div>
-                  <h4>Drive</h4>
+                  <h4>Travel</h4>
                   <p>{restaurant.driveTime}</p>
                   {restaurant.driveNote && (
                     <small className="status-warn">{restaurant.driveNote}</small>
