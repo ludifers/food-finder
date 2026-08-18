@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import { useAuth } from "../context/useAuth";
 import {
   createAccountWithEmail,
+  sendResetPasswordEmail,
   signInWithEmail,
   signInWithGoogle,
   signOutUser,
@@ -29,6 +30,7 @@ function getAuthErrorMessage(error) {
     "auth/email-already-in-use": "That email already has an account.",
     "auth/invalid-credential": "That email or password does not look right.",
     "auth/invalid-email": "Enter a valid email address.",
+    "auth/missing-email": "Enter your email address first.",
     "auth/missing-password": "Enter your password.",
     "auth/operation-not-allowed":
       "Enable Email/Password sign-in in Firebase Authentication first.",
@@ -137,6 +139,7 @@ function Account() {
     password: "",
   });
   const [error, setError] = useState("");
+  const [authStatus, setAuthStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preferences, setPreferences] = useState(loadMatchPreferences);
   const [savedPreferences, setSavedPreferences] = useState(loadMatchPreferences);
@@ -167,6 +170,7 @@ function Account() {
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
+    setAuthStatus("");
     setIsSubmitting(true);
 
     try {
@@ -184,10 +188,34 @@ function Account() {
 
   async function handleGoogleSignIn() {
     setError("");
+    setAuthStatus("");
     setIsSubmitting(true);
 
     try {
       await signInWithGoogle();
+    } catch (authError) {
+      setError(getAuthErrorMessage(authError));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleForgotPassword() {
+    const email = form.email.trim();
+
+    setError("");
+    setAuthStatus("");
+
+    if (!email) {
+      setError("Enter your email address first.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await sendResetPasswordEmail(email);
+      setAuthStatus(`Password reset email sent to ${email}.`);
     } catch (authError) {
       setError(getAuthErrorMessage(authError));
     } finally {
@@ -441,10 +469,22 @@ function Account() {
               </label>
 
               {error && <p className="account-error">{error}</p>}
+              {authStatus && <p className="account-success">{authStatus}</p>}
 
               <button className="primary-btn" disabled={isSubmitting} type="submit">
                 {mode === "signup" ? "Create account" : "Log in"}
               </button>
+
+              {mode === "login" && (
+                <button
+                  className="forgot-password-btn"
+                  disabled={isSubmitting}
+                  onClick={handleForgotPassword}
+                  type="button"
+                >
+                  Forgot password?
+                </button>
+              )}
             </form>
 
             <div className="auth-divider">or</div>

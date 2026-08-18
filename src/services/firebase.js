@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   getAuth,
   GoogleAuthProvider,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -57,6 +58,14 @@ export function signInWithEmail({ email, password }) {
   }
 
   return signInWithEmailAndPassword(auth, email, password);
+}
+
+export function sendResetPasswordEmail(email) {
+  if (!auth) {
+    return Promise.reject(new Error("Firebase is not configured yet."));
+  }
+
+  return sendPasswordResetEmail(auth, email);
 }
 
 export function signOutUser() {
