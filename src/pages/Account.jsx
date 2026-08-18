@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/useAuth";
 import {
@@ -136,6 +137,7 @@ async function geocodeAddress(address) {
 
 function Account() {
   const { isFirebaseConfigured, user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
     email: "",
@@ -313,6 +315,7 @@ function Account() {
   );
   const totalChoicesRemaining =
     freeChoicesRemaining + swipeUsage.paidChoicesRemaining;
+  const isPaymentPending = searchParams.get("payment") === "pending";
 
   return (
     <div>
@@ -327,6 +330,14 @@ function Account() {
               Keep your saved spots, UCF-area preferences, and matching defaults
               in one place.
             </p>
+            {isPaymentPending && (
+              <div className="payment-pending-banner">
+                <strong>Payment received.</strong>
+                <span>
+                  Your credits should be added to your account within an hour.
+                </span>
+              </div>
+            )}
           </div>
 
         {!isFirebaseConfigured ? (
@@ -383,6 +394,10 @@ function Account() {
                   {freeChoicesRemaining} free / {swipeUsage.paidChoicesRemaining} paid
                   choices remaining.
                 </p>
+                <div className="credit-total">
+                  <span>Total credits</span>
+                  <strong>{totalChoicesRemaining}</strong>
+                </div>
                 {paymentStatus && <p className="account-error">{paymentStatus}</p>}
                 <button
                   className="primary-btn"

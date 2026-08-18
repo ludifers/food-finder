@@ -1691,6 +1691,22 @@ button {
   line-height: 1.55;
 }
 
+.payment-pending-banner {
+  display: grid;
+  gap: 4px;
+  width: min(100%, 560px);
+  margin-top: 18px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  padding: 14px 16px;
+  color: #166534;
+}
+
+.payment-pending-banner strong {
+  color: #10231a;
+}
+
 .account-card {
   width: min(100%, 500px);
   background: #ffffff;
@@ -2000,6 +2016,40 @@ button {
 
 .choice-pack-panel .primary-btn {
   width: 100%;
+}
+
+.credit-total,
+.credit-mini-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.credit-total {
+  border: 1px solid #d9e5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.credit-total span,
+.credit-mini-stat span {
+  color: #59685f;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.credit-total strong,
+.credit-mini-stat strong {
+  color: #10231a;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.credit-mini-stat {
+  margin-bottom: 8px;
 }
 
 .empty-state {

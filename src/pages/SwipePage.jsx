@@ -538,11 +538,13 @@ function SwipePage() {
           )}
 
           <div className="choice-summary">
+            <div className="credit-mini-stat">
+              <span>Total credits</span>
+              <strong>{totalChoicesRemaining}</strong>
+            </div>
             <p>
-              {`${totalChoicesRemaining} choices left.`}
-              {!freeDecisionsRemaining &&
-                effectiveSwipeUsage.paidChoicesRemaining > 0 &&
-                ` ${effectiveSwipeUsage.paidChoicesRemaining} paid choices remaining.`}
+              {freeDecisionsRemaining} free /{" "}
+              {effectiveSwipeUsage.paidChoicesRemaining} paid choices remaining.
             </p>
             {totalChoicesRemaining === 0 && (
               <button
