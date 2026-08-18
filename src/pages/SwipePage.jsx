@@ -20,6 +20,7 @@ import {
   getRestaurantDriveMinutes,
   loadMatchPreferences,
 } from "../services/matchPreferences";
+import { startPremiumCheckout } from "../services/payments";
 import { UCF_CENTER } from "../services/ucfArea";
 import {
   FREE_SWIPE_DECISION_LIMIT,
@@ -202,6 +203,19 @@ function SwipePage() {
 
       return (current + direction + total) % total;
     });
+  }
+
+  function handleUpgradeToPremium() {
+    if (!user) {
+      navigate("/account");
+      return;
+    }
+
+    try {
+      startPremiumCheckout(user);
+    } catch (paymentError) {
+      setSaveError(paymentError.message);
+    }
   }
 
   async function handleChoice(choice) {
@@ -528,7 +542,7 @@ function SwipePage() {
             {!effectiveSwipeUsage.isPremium && freeDecisionsRemaining === 0 && (
               <button
                 className="primary-btn upgrade-btn"
-                onClick={() => navigate("/account")}
+                onClick={handleUpgradeToPremium}
                 type="button"
               >
                 Upgrade to Premium

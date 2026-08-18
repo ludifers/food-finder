@@ -13,7 +13,10 @@ import {
   loadMatchPreferences,
   saveMatchPreferences,
 } from "../services/matchPreferences";
+import { startPremiumCheckout } from "../services/payments";
 import {
+  FREE_SWIPE_DECISION_LIMIT,
+  getSwipeDecisionUsage,
   getUserPreferences,
   saveUserPreferences,
 } from "../services/userDataService";
@@ -144,6 +147,12 @@ function Account() {
   const [preferences, setPreferences] = useState(loadMatchPreferences);
   const [savedPreferences, setSavedPreferences] = useState(loadMatchPreferences);
   const [profileStatus, setProfileStatus] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
+  const [swipeUsage, setSwipeUsage] = useState({
+    count: 0,
+    isPremium: false,
+    userId: "",
+  });
   const profileInitial =
     user?.displayName?.[0] || user?.email?.[0] || form.name?.[0] || "U";
   const travelSummary =
@@ -158,14 +167,15 @@ function Account() {
   useEffect(() => {
     if (!user) return;
 
-    getUserPreferences(user.uid)
-      .then((cloudPreferences) => {
+    Promise.all([getUserPreferences(user.uid), getSwipeDecisionUsage(user.uid)])
+      .then(([cloudPreferences, usage]) => {
         const nextPreferences = {
           ...loadMatchPreferences(),
           ...cloudPreferences,
         };
         setPreferences(nextPreferences);
         setSavedPreferences(nextPreferences);
+        setSwipeUsage({ ...usage, userId: user.uid });
       })
       .catch(() => {});
   }, [user]);
@@ -286,6 +296,16 @@ function Account() {
     setProfileStatus("Changes cancelled.");
   }
 
+  function handleUpgradeToPremium() {
+    setPaymentStatus("");
+
+    try {
+      startPremiumCheckout(user);
+    } catch (paymentError) {
+      setPaymentStatus(paymentError.message);
+    }
+  }
+
   return (
     <div>
       <Navbar />
@@ -338,6 +358,29 @@ function Account() {
                   <span>Budget</span>
                   <strong>{budgetSummary}</strong>
                 </article>
+                <article>
+                  <span>Plan</span>
+                  <strong>
+                    {swipeUsage.isPremium
+                      ? "Premium"
+                      : `${Math.max(0, FREE_SWIPE_DECISION_LIMIT - swipeUsage.count)} free decisions left`}
+                  </strong>
+                </article>
+              </div>
+
+              <div className="premium-panel">
+                <p className="eyebrow">Premium</p>
+                <h3>Keep swiping after your free decisions.</h3>
+                <p>Premium unlocks more Yes, No, and Maybe choices for UCF matches.</p>
+                {paymentStatus && <p className="account-error">{paymentStatus}</p>}
+                <button
+                  className="primary-btn"
+                  disabled={swipeUsage.isPremium}
+                  onClick={handleUpgradeToPremium}
+                  type="button"
+                >
+                  {swipeUsage.isPremium ? "Premium active" : "Upgrade to Premium"}
+                </button>
               </div>
 
               <button className="secondary-btn logout-btn" onClick={signOutUser}>

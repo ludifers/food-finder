@@ -1974,6 +1974,34 @@ button {
   line-height: 1.25;
 }
 
+.premium-panel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #d9e5dc;
+  border-radius: 8px;
+  background: #f4faf6;
+  padding: 16px;
+}
+
+.premium-panel h3,
+.premium-panel p {
+  margin: 0;
+}
+
+.premium-panel h3 {
+  color: #10231a;
+  line-height: 1.15;
+}
+
+.premium-panel p:not(.eyebrow):not(.account-error) {
+  color: #59685f;
+  line-height: 1.45;
+}
+
+.premium-panel .primary-btn {
+  width: 100%;
+}
+
 .empty-state {
   text-align: center;
 }
