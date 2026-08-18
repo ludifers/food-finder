@@ -991,10 +991,19 @@ button {
   font-size: 14px;
 }
 
+.choice-summary p {
+  margin: 0;
+}
+
 .choice-error {
   margin: 8px 0 0;
   color: #b42318;
   font-weight: 800;
+}
+
+.upgrade-btn {
+  width: 100%;
+  margin-top: 10px;
 }
 
 .action-row {
@@ -1013,6 +1022,11 @@ button {
   border-radius: 8px;
   border: none;
   font-weight: 800;
+}
+
+.action-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .pass-btn {

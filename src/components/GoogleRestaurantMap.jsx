@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { reserveGoogleRequest } from "../services/apiUsageLimits";
 import { loadGoogleMaps } from "../services/googleMaps";
 import {
   mapGooglePlaceToRestaurant,
@@ -20,6 +21,7 @@ import {
 } from "../services/ucfArea";
 
 const MAP_DRAG_REFRESH_MILES = 4;
+const GOOGLE_RESULT_LIMIT = 10;
 
 function createConcurrencyLimiter(max) {
   let running = 0;
@@ -231,6 +233,13 @@ function geocodeLocation(query) {
     const geocoder = new window.google.maps.Geocoder();
     const address = normalizeLocationQuery(query);
 
+    try {
+      reserveGoogleRequest();
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
     geocoder.geocode({ address }, (results, status) => {
       if (status !== "OK" || !results?.[0]?.geometry?.location) {
         reject(new Error(`Could not find ${query}.`));
@@ -270,6 +279,7 @@ async function findLocationCenter(query) {
     return null;
   }
 
+  reserveGoogleRequest();
   const { places } = await Place.searchByText({
     fields: ["location", "displayName", "formattedAddress"],
     maxResultCount: 1,
@@ -296,6 +306,7 @@ async function searchTextNewApi(center, query, locationQuery) {
     throw new Error("Text search is unavailable.");
   }
 
+  reserveGoogleRequest();
   const { places } = await Place.searchByText({
     fields: placeFields,
     includedType: "restaurant",
@@ -307,7 +318,7 @@ async function searchTextNewApi(center, query, locationQuery) {
           },
         }
       : {}),
-    maxResultCount: 20,
+    maxResultCount: GOOGLE_RESULT_LIMIT,
     textQuery: locationQuery
       ? `${query} near ${normalizeLocationQuery(locationQuery)}`
       : query,
@@ -329,6 +340,7 @@ async function searchNearbyNewApi(center) {
   const placeGroups = await Promise.all(
     FOOD_PLACE_TYPE_GROUPS.map((includedPrimaryTypes) =>
       limit(async () => {
+        reserveGoogleRequest();
         const { places } = await Place.searchNearby({
           fields: placeFields,
           includedPrimaryTypes,
@@ -336,7 +348,7 @@ async function searchNearbyNewApi(center) {
             center,
             radius: 9000,
           },
-          maxResultCount: 20,
+          maxResultCount: GOOGLE_RESULT_LIMIT,
           rankPreference: SearchNearbyRankPreference.POPULARITY,
         });
 
@@ -395,6 +407,7 @@ async function hydratePlacePhotos(places) {
         }
 
         try {
+          reserveGoogleRequest();
           await place.fetchFields({
             fields: [
               "photos",
@@ -437,6 +450,13 @@ function GoogleRestaurantMap({
   function legacyNearbySearch(map, center, query) {
     return new Promise((resolve, reject) => {
       const service = new window.google.maps.places.PlacesService(map);
+
+      try {
+        reserveGoogleRequest();
+      } catch (error) {
+        reject(error);
+        return;
+      }
 
       service.nearbySearch(
         {

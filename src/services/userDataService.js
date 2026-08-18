@@ -9,8 +9,14 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 
+export const FREE_SWIPE_DECISION_LIMIT = 5;
+
 function localSavedKey(userId) {
   return `savedRestaurants:${userId}`;
+}
+
+function localSwipeUsageKey(userId) {
+  return `swipeDecisionUsage:${userId}`;
 }
 
 function normalizeSavedRestaurant(restaurant, saveType) {
@@ -141,4 +147,67 @@ export async function saveUserPreferences(userId, preferences) {
     ...preferences,
     userLocation: preferences.userLocation ?? null,
   });
+}
+
+export function getLocalSwipeDecisionUsage(userId) {
+  if (!userId) return { count: 0, isPremium: false };
+
+  try {
+    return JSON.parse(localStorage.getItem(localSwipeUsageKey(userId))) || {
+      count: 0,
+      isPremium: false,
+    };
+  } catch {
+    return { count: 0, isPremium: false };
+  }
+}
+
+function saveLocalSwipeDecisionUsage(userId, usage) {
+  if (!userId) return;
+  localStorage.setItem(localSwipeUsageKey(userId), JSON.stringify(usage));
+}
+
+export async function getSwipeDecisionUsage(userId) {
+  const localUsage = getLocalSwipeDecisionUsage(userId);
+
+  if (!db || !userId) {
+    return localUsage;
+  }
+
+  const [usageSnap, billingSnap] = await Promise.all([
+    getDoc(doc(db, "users", userId, "usage", "swipeDecisions")),
+    getDoc(doc(db, "users", userId, "billing", "status")),
+  ]);
+  const usage = {
+    count: usageSnap.exists() ? Number(usageSnap.data().count) || 0 : 0,
+    isPremium: billingSnap.exists()
+      ? Boolean(billingSnap.data().isPremium)
+      : Boolean(localUsage.isPremium),
+  };
+
+  saveLocalSwipeDecisionUsage(userId, usage);
+  return usage;
+}
+
+export async function incrementSwipeDecisionUsage(userId) {
+  const currentUsage = await getSwipeDecisionUsage(userId);
+  const nextUsage = {
+    ...currentUsage,
+    count: currentUsage.count + 1,
+  };
+
+  saveLocalSwipeDecisionUsage(userId, nextUsage);
+
+  if (db && userId) {
+    await setDoc(
+      doc(db, "users", userId, "usage", "swipeDecisions"),
+      {
+        count: nextUsage.count,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  }
+
+  return nextUsage;
 }

@@ -1,3 +1,5 @@
+import { reserveGoogleRequest } from "./apiUsageLimits";
+
 const GOOGLE_MAPS_SCRIPT_ID = "google-maps-js";
 
 let mapsPromise;
@@ -32,6 +34,13 @@ export function loadGoogleMaps() {
       existingScript.addEventListener("error", () =>
         reject(new Error("Google Maps failed to load."))
       );
+      return;
+    }
+
+    try {
+      reserveGoogleRequest();
+    } catch (error) {
+      reject(error);
       return;
     }
 

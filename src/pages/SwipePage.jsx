@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import GoogleRestaurantMap from "../components/GoogleRestaurantMap";
@@ -22,6 +22,9 @@ import {
 } from "../services/matchPreferences";
 import { UCF_CENTER } from "../services/ucfArea";
 import {
+  FREE_SWIPE_DECISION_LIMIT,
+  getSwipeDecisionUsage,
+  incrementSwipeDecisionUsage,
   saveRestaurant,
   saveRestaurantLocally,
 } from "../services/userDataService";
@@ -91,6 +94,11 @@ function SwipePage() {
   const [passed, setPassed] = useState([]);
   const [saveError, setSaveError] = useState("");
   const [mapStatus, setMapStatus] = useState("");
+  const [swipeUsage, setSwipeUsage] = useState({
+    count: 0,
+    isPremium: false,
+    userId: "",
+  });
   const RestaurantMap = shouldUseGoogleProvider()
     ? GoogleRestaurantMap
     : shouldUseOsmProvider()
@@ -129,6 +137,45 @@ function SwipePage() {
       ? [restaurant.image]
       : [];
   const activePhoto = restaurantPhotos[photoIndex] || restaurantPhotos[0];
+  const isUsageLoading = Boolean(user && swipeUsage.userId !== user.uid);
+  const effectiveSwipeUsage = user && swipeUsage.userId === user.uid
+    ? swipeUsage
+    : {
+        count: 0,
+        isPremium: false,
+        userId: "",
+      };
+  const freeDecisionsRemaining = Math.max(
+    0,
+    FREE_SWIPE_DECISION_LIMIT - effectiveSwipeUsage.count
+  );
+  const hasPremiumAccess =
+    effectiveSwipeUsage.isPremium ||
+    effectiveSwipeUsage.count < FREE_SWIPE_DECISION_LIMIT;
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let ignore = false;
+
+    getSwipeDecisionUsage(user.uid)
+      .then((usage) => {
+        if (!ignore) {
+          setSwipeUsage({ ...usage, userId: user.uid });
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setSwipeUsage({ count: 0, isPremium: false, userId: user.uid });
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
 
   const handleRestaurantsLoaded = useCallback((nextRestaurants) => {
     setLiveRestaurants(nextRestaurants);
@@ -162,12 +209,25 @@ function SwipePage() {
       return;
     }
 
-    if ((choice === "love" || choice === "maybe") && !user) {
+    if (!user) {
       navigate("/account");
       return;
     }
 
     setSaveError("");
+
+    if (!hasPremiumAccess) {
+      setSaveError("You used your 5 free decisions. Upgrade to Premium to keep swiping.");
+      return;
+    }
+
+    try {
+      const nextUsage = await incrementSwipeDecisionUsage(user.uid);
+      setSwipeUsage({ ...nextUsage, userId: user.uid });
+    } catch (error) {
+      setSaveError(error.message || "Could not check your free decision limit.");
+      return;
+    }
 
     if (choice === "love" || choice === "maybe") {
       const saveType = choice === "love" ? "Liked" : "Maybe";
@@ -459,10 +519,28 @@ function SwipePage() {
             </div>
           )}
 
+          <div className="choice-summary">
+            <p>
+              {effectiveSwipeUsage.isPremium
+                ? "Premium active: unlimited decisions."
+                : `${freeDecisionsRemaining} of ${FREE_SWIPE_DECISION_LIMIT} free decisions left.`}
+            </p>
+            {!effectiveSwipeUsage.isPremium && freeDecisionsRemaining === 0 && (
+              <button
+                className="primary-btn upgrade-btn"
+                onClick={() => navigate("/account")}
+                type="button"
+              >
+                Upgrade to Premium
+              </button>
+            )}
+          </div>
+
           <div className="action-row">
             <button
               onClick={() => handleChoice("pass")}
               className="pass-btn"
+              disabled={isUsageLoading || !hasPremiumAccess}
             >
               No
             </button>
@@ -470,6 +548,7 @@ function SwipePage() {
             <button
               onClick={() => handleChoice("love")}
               className="love-btn"
+              disabled={isUsageLoading || !hasPremiumAccess}
             >
               Yes
             </button>
@@ -477,6 +556,7 @@ function SwipePage() {
             <button
               onClick={() => handleChoice("maybe")}
               className="maybe-btn"
+              disabled={isUsageLoading || !hasPremiumAccess}
             >
               Maybe
             </button>
