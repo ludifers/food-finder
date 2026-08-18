@@ -33,7 +33,7 @@ export function reserveGoogleRequest(units = 1) {
 
   if (usage.count + units > GOOGLE_DAILY_REQUEST_LIMIT) {
     throw new Error(
-      `Daily Google request limit reached (${GOOGLE_DAILY_REQUEST_LIMIT}/day). Try again tomorrow.`
+      "FoodFinder reached today's live search limit. Come back tomorrow for more UCF restaurant matches."
     );
   }
 
