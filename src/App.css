@@ -1029,6 +1029,15 @@ button {
   opacity: 0.48;
 }
 
+.action-row.locked button,
+.action-row.locked .pass-btn,
+.action-row.locked .love-btn,
+.action-row.locked .maybe-btn {
+  background: #d9e5dc;
+  color: #59685f;
+  opacity: 1;
+}
+
 .pass-btn {
   background: #ffe3df;
 }

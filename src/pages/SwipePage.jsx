@@ -536,7 +536,7 @@ function SwipePage() {
             )}
           </div>
 
-          <div className="action-row">
+          <div className={`action-row${hasPremiumAccess ? "" : " locked"}`}>
             <button
               onClick={() => handleChoice("pass")}
               className="pass-btn"
