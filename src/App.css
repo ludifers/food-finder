@@ -85,11 +85,13 @@ button {
 
 .account-menu {
   position: relative;
+  padding-bottom: 10px;
+  margin-bottom: -10px;
 }
 
 .account-menu-panel {
   position: absolute;
-  top: calc(100% + 10px);
+  top: 100%;
   right: 0;
   z-index: 20;
   min-width: 150px;

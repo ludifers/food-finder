@@ -24,14 +24,18 @@ function Navbar() {
           </Link>
         ) : user ? (
           <div className="account-menu">
-            <button className="profile-circle" type="button">
+            <button
+              aria-haspopup="menu"
+              className="profile-circle"
+              type="button"
+            >
               {user.photoURL ? (
                 <img src={user.photoURL} alt={user.displayName || "Account"} />
               ) : (
                 user.displayName?.[0] || user.email?.[0] || "U"
               )}
             </button>
-            <div className="account-menu-panel">
+            <div className="account-menu-panel" role="menu">
               <Link to="/account">Profile</Link>
               <button onClick={signOutUser} type="button">
                 Sign out
