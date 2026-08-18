@@ -159,23 +159,23 @@ function Cravings() {
           <p className="eyebrow">Match preferences</p>
           <h1>Build your food match profile.</h1>
           <p>
-            Set your starting point, budget, drive target, and cravings so
-            FoodFinder can score restaurants like a real matchmaker.
+            Set your UCF-area starting point, budget, drive target, and cravings
+            so FoodFinder can score restaurants like a real matchmaker.
           </p>
         </section>
 
         <section className="quiz-card">
           <div className="quiz-block">
-            <h2>Where do you want to eat?</h2>
+            <h2>Where near UCF do you want to eat?</h2>
             <div className="preference-fields">
               <label>
-                City, neighborhood, or area
+                Campus area, neighborhood, or ZIP
                 <input
                   value={preferences.searchLocation}
                   onChange={(event) =>
                     updatePreference("searchLocation", event.target.value)
                   }
-                  placeholder="Orlando, Viera, Cocoa Beach, or 32801"
+                  placeholder="UCF, Knights Plaza, Waterford Lakes, or 32816"
                 />
               </label>
               <button className="secondary-btn" onClick={useCurrentLocation}>

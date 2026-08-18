@@ -267,7 +267,7 @@ function Account() {
                   onChange={(event) =>
                     updatePreference("searchLocation", event.target.value)
                   }
-                  placeholder="Orlando, Viera, Cocoa Beach, or a ZIP"
+                  placeholder="UCF, Knights Plaza, Waterford Lakes, or 32816"
                   value={preferences.searchLocation}
                 />
               </label>
@@ -278,7 +278,7 @@ function Account() {
                   onChange={(event) =>
                     updatePreference("startAddress", event.target.value)
                   }
-                  placeholder="Home, work, school, or a full address"
+                  placeholder="Dorm, apartment, class, work, or a full address"
                   value={preferences.startAddress}
                 />
               </label>

@@ -5,7 +5,7 @@ import {
 } from "./foodPreferences";
 
 export const defaultMatchPreferences = {
-  searchLocation: "",
+  searchLocation: "UCF, Orlando, FL",
   startAddress: "",
   budgetPerPerson: 20,
   maxDriveMinutes: 15,
@@ -13,12 +13,36 @@ export const defaultMatchPreferences = {
   userLocation: null,
 };
 
+const previousBroadLocations = new Set([
+  "",
+  "orlando",
+  "viera",
+  "viera, melbourne, fl",
+  "cocoa beach",
+  "winter park",
+  "lake nona",
+  "downtown orlando",
+  "kissimmee",
+  "melbourne",
+]);
+
+function normalizeSearchLocation(searchLocation) {
+  const normalized = String(searchLocation || "").trim().toLowerCase();
+
+  if (previousBroadLocations.has(normalized)) {
+    return defaultMatchPreferences.searchLocation;
+  }
+
+  return searchLocation;
+}
+
 export function loadMatchPreferences() {
   const stored = JSON.parse(localStorage.getItem("matchPreferences")) || {};
 
   return {
     ...defaultMatchPreferences,
     ...stored,
+    searchLocation: normalizeSearchLocation(stored.searchLocation),
   };
 }
 

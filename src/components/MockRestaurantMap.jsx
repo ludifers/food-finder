@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import MockMapView from "./MockMapView";
-import { getMockVieraRestaurants } from "../services/mockRestaurants";
+import { getMockUcfRestaurants } from "../services/mockRestaurants";
 
 function MockRestaurantMap({
   cravings,
@@ -17,11 +17,11 @@ function MockRestaurantMap({
       return;
     }
 
-    onStatusChange("Loading Viera mock restaurants...");
+    onStatusChange("Loading UCF mock restaurants...");
 
     const timeoutId = window.setTimeout(() => {
-      onRestaurantsLoaded(getMockVieraRestaurants(cravings));
-      onStatusChange("Showing Viera mock restaurants.");
+      onRestaurantsLoaded(getMockUcfRestaurants(cravings));
+      onStatusChange("Showing UCF mock restaurants.");
     }, 150);
 
     return () => window.clearTimeout(timeoutId);

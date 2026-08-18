@@ -12,11 +12,11 @@ function Dashboard() {
       <main className="dashboard">
         <section className="match-hero">
           <div className="hero-copy">
-            <p className="eyebrow">Food matching for Orlando</p>
-            <h1>Great meals. No endless scrolling.</h1>
+            <p className="eyebrow">Food matching for UCF</p>
+            <h1>Great meals near campus. No endless scrolling.</h1>
             <p>
               Tell FoodFinder what matters tonight, then get a short list of
-              places that fit your budget, distance, cravings, and vibe.
+              UCF-area spots that fit your budget, distance, cravings, and vibe.
             </p>
 
             <div className="hero-actions">
@@ -37,10 +37,10 @@ function Dashboard() {
             <div className="preview-placeholder" aria-hidden="true">
               <span>MAP</span>
             </div>
-            <p>Real restaurants near you</p>
+            <p>Real restaurants around UCF</p>
             <small>
               Results load from Google Places and adapt to your budget, commute,
-              cravings, and open-now preferences.
+              cravings, and open-now preferences around campus.
             </small>
           </div>
         </section>
@@ -81,7 +81,7 @@ function Dashboard() {
           <div className="section-heading">
             <div>
               <h2>Matched for tonight</h2>
-              <p>Start Discover to load live restaurants from Google Places.</p>
+              <p>Start Discover to load live restaurants around UCF.</p>
             </div>
             <button className="text-btn" onClick={() => navigate("/discover")}>
               View all
@@ -91,8 +91,8 @@ function Dashboard() {
           <div className="live-match-cta">
             <h3>No mock listings here.</h3>
             <p>
-              FoodFinder now waits for live Google data so the matches, photos,
-              hours, and reviews reflect real restaurants.
+              FoodFinder now waits for live Google data so the UCF-area matches,
+              photos, hours, and reviews reflect real restaurants.
             </p>
             <button className="primary-btn" onClick={() => navigate("/discover")}>
               Load live matches
@@ -102,11 +102,11 @@ function Dashboard() {
 
         <section className="city-search">
           <div>
-            <h2>Find food by neighborhood</h2>
-            <p>Prefer to browse? Search an area and keep the quiz in your pocket.</p>
+            <h2>Find food near campus</h2>
+            <p>Prefer to browse? Search a UCF-area spot and keep the quiz in your pocket.</p>
           </div>
           <div className="search-shell">
-            <input placeholder="Search by city, neighborhood, or campus" />
+            <input placeholder="Search UCF, Knights Plaza, or Waterford Lakes" />
             <button onClick={() => navigate("/discover")}>Search</button>
           </div>
         </section>

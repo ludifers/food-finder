@@ -10,7 +10,7 @@ import {
   getSelectedVibes,
 } from "../services/foodPreferences";
 
-const ORLANDO_CENTER = { lat: 28.6024, lng: -81.2001 };
+const UCF_CENTER = { lat: 28.6024, lng: -81.2001 };
 const MAP_DRAG_REFRESH_MILES = 4;
 
 function createConcurrencyLimiter(max) {
@@ -79,9 +79,41 @@ const FOOD_PLACE_TYPE_GROUPS = [
   ],
 ];
 const LOCATION_FALLBACKS = {
-  viera: {
-    address: "Viera, Melbourne, FL, USA",
-    center: { lat: 28.2294, lng: -80.7295 },
+  ucf: {
+    address: "University of Central Florida, Orlando, FL, USA",
+    center: UCF_CENTER,
+  },
+  "ucf, orlando, fl": {
+    address: "University of Central Florida, Orlando, FL, USA",
+    center: UCF_CENTER,
+  },
+  "knights plaza": {
+    address: "Knights Plaza, Orlando, FL 32816, USA",
+    center: { lat: 28.6077, lng: -81.1998 },
+  },
+  "university blvd": {
+    address: "University Blvd, Orlando, FL 32817, USA",
+    center: { lat: 28.5966, lng: -81.2153 },
+  },
+  "alafaya trail": {
+    address: "N Alafaya Trail, Orlando, FL 32826, USA",
+    center: { lat: 28.5863, lng: -81.2078 },
+  },
+  "waterford lakes": {
+    address: "Waterford Lakes, Orlando, FL, USA",
+    center: { lat: 28.5519, lng: -81.2003 },
+  },
+  "research park": {
+    address: "Central Florida Research Park, Orlando, FL, USA",
+    center: { lat: 28.5882, lng: -81.1994 },
+  },
+  oviedo: {
+    address: "Oviedo, FL, USA",
+    center: { lat: 28.6699, lng: -81.2081 },
+  },
+  "east orlando": {
+    address: "East Orlando, Orlando, FL, USA",
+    center: UCF_CENTER,
   },
 };
 const placeFields = [
@@ -308,7 +340,7 @@ async function searchTextNewApi(center, query, locationQuery) {
       ? {
           locationBias: {
             center,
-            radius: 10000,
+            radius: 9000,
           },
         }
       : {}),
@@ -339,7 +371,7 @@ async function searchNearbyNewApi(center) {
           includedPrimaryTypes,
           locationRestriction: {
             center,
-            radius: 8000,
+            radius: 9000,
           },
           maxResultCount: 20,
           rankPreference: SearchNearbyRankPreference.POPULARITY,
@@ -541,7 +573,7 @@ function GoogleRestaurantMap({
         });
 
         const mapCenter =
-          resolvedCenter || preferences.userLocation || ORLANDO_CENTER;
+          resolvedCenter || preferences.userLocation || UCF_CENTER;
         const searchCenter = locationQuery
           ? resolvedCenter || null
           : mapCenter;

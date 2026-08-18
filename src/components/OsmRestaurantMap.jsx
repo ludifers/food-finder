@@ -33,7 +33,7 @@ function OsmRestaurantMap({
       onStatusChange("Loading OpenStreetMap restaurants...");
 
       try {
-        const nextCenter = await geocodeOsmLocation(locationQuery || "Orlando");
+        const nextCenter = await geocodeOsmLocation(locationQuery || "UCF");
         const nextRestaurants = await searchOsmRestaurants(nextCenter, cravings);
 
         if (ignore || currentRequest !== requestId.current) {

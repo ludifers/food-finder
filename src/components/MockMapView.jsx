@@ -1,13 +1,13 @@
-import { VIERA_BOUNDS, VIERA_CENTER } from "../services/mockRestaurants";
+import { UCF_BOUNDS, UCF_CENTER } from "../services/mockRestaurants";
 
 function markerPosition(location) {
   const left =
-    ((location.lng - VIERA_BOUNDS.west) /
-      (VIERA_BOUNDS.east - VIERA_BOUNDS.west)) *
+    ((location.lng - UCF_BOUNDS.west) /
+      (UCF_BOUNDS.east - UCF_BOUNDS.west)) *
     100;
   const top =
-    ((VIERA_BOUNDS.north - location.lat) /
-      (VIERA_BOUNDS.north - VIERA_BOUNDS.south)) *
+    ((UCF_BOUNDS.north - location.lat) /
+      (UCF_BOUNDS.north - UCF_BOUNDS.south)) *
     100;
 
   return {
@@ -26,19 +26,19 @@ function MockMapView({
 
   return (
     <div className="google-map-shell mock-map-shell">
-      <div className="mock-map" aria-label="Viera mock restaurant map">
+      <div className="mock-map" aria-label="UCF mock restaurant map">
         <div className="mock-water mock-water-one" />
         <div className="mock-water mock-water-two" />
-        <div className="mock-road mock-road-i95">I-95</div>
-        <div className="mock-road mock-road-viera">Viera Blvd</div>
-        <div className="mock-road mock-road-stadium">Stadium Pkwy</div>
-        <div className="mock-road mock-road-lake">Lake Andrew Dr</div>
-        <div className="mock-road mock-road-wickham">N Wickham Rd</div>
+        <div className="mock-road mock-road-i95">SR 417</div>
+        <div className="mock-road mock-road-viera">University Blvd</div>
+        <div className="mock-road mock-road-stadium">Alafaya Trl</div>
+        <div className="mock-road mock-road-lake">Gemini Blvd</div>
+        <div className="mock-road mock-road-wickham">Colonial Dr</div>
 
-        <div className="mock-place mock-place-avenue">The Avenue Viera</div>
-        <div className="mock-place mock-place-duran">Duran Golf Club</div>
+        <div className="mock-place mock-place-avenue">UCF</div>
+        <div className="mock-place mock-place-duran">Waterford Lakes</div>
         <div className="mock-place mock-place-center">
-          {VIERA_CENTER.lat.toFixed(3)}, {VIERA_CENTER.lng.toFixed(3)}
+          {UCF_CENTER.lat.toFixed(3)}, {UCF_CENTER.lng.toFixed(3)}
         </div>
 
         {visibleMarkers.map((restaurant, index) => {
@@ -69,8 +69,8 @@ function MockMapView({
         </div>
       )}
 
-      <div className="mock-credit">Viera mock dev mode</div>
-      {isLoading && <div className="map-loading">Loading Viera mock restaurants...</div>}
+      <div className="mock-credit">UCF mock dev mode</div>
+      {isLoading && <div className="map-loading">Loading UCF mock restaurants...</div>}
     </div>
   );
 }

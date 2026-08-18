@@ -1,11 +1,19 @@
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
-const DEFAULT_CENTER = { lat: 28.6024, lng: -81.2001 };
+const DEFAULT_CENTER = { lat: 28.6024, lng: -81.2001, label: "UCF, Orlando, FL" };
 const DEFAULT_IMAGE =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 680'%3E%3Crect width='900' height='680' fill='%23f0eadf'/%3E%3Ccircle cx='450' cy='300' r='92' fill='%230f766e' opacity='.22'/%3E%3Cpath d='M300 410h300v42H300z' fill='%23151515' opacity='.18'/%3E%3Cpath d='M352 276h196l38 134H314z' fill='%23fffdfa' stroke='%23d6cdbc' stroke-width='18'/%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 680'%3E%3Crect width='900' height='680' fill='%23f6faf7'/%3E%3Ccircle cx='450' cy='300' r='92' fill='%23167a4a' opacity='.22'/%3E%3Cpath d='M300 410h300v42H300z' fill='%2310231a' opacity='.18'/%3E%3Cpath d='M352 276h196l38 134H314z' fill='%23ffffff' stroke='%23cbdad0' stroke-width='18'/%3E%3C/svg%3E";
 
 const LOCATION_FALLBACKS = {
-  viera: { lat: 28.2294, lng: -80.7295, label: "Viera, Melbourne, FL" },
+  ucf: { lat: 28.6024, lng: -81.2001, label: "UCF, Orlando, FL" },
+  "ucf, orlando, fl": { lat: 28.6024, lng: -81.2001, label: "UCF, Orlando, FL" },
+  "knights plaza": { lat: 28.6077, lng: -81.1998, label: "Knights Plaza, Orlando, FL" },
+  "university blvd": { lat: 28.5966, lng: -81.2153, label: "University Blvd, Orlando, FL" },
+  "alafaya trail": { lat: 28.5863, lng: -81.2078, label: "Alafaya Trail, Orlando, FL" },
+  "waterford lakes": { lat: 28.5519, lng: -81.2003, label: "Waterford Lakes, Orlando, FL" },
+  "research park": { lat: 28.5882, lng: -81.1994, label: "Central Florida Research Park" },
+  oviedo: { lat: 28.6699, lng: -81.2081, label: "Oviedo, FL" },
+  "east orlando": { lat: 28.6024, lng: -81.2001, label: "East Orlando, FL" },
 };
 
 function timeoutSignal(ms) {

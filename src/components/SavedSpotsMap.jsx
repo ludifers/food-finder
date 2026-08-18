@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { loadGoogleMaps } from "../services/googleMaps";
 
-const ORLANDO_CENTER = { lat: 28.6024, lng: -81.2001 };
+const UCF_CENTER = { lat: 28.6024, lng: -81.2001 };
 const SELECTED_SAVED_ZOOM = 16;
 
 function getMapCenter(restaurants, selectedRestaurant) {
@@ -9,7 +9,7 @@ function getMapCenter(restaurants, selectedRestaurant) {
     return selectedRestaurant.location;
   }
 
-  return restaurants.find((restaurant) => restaurant.location)?.location || ORLANDO_CENTER;
+  return restaurants.find((restaurant) => restaurant.location)?.location || UCF_CENTER;
 }
 
 function SavedSpotsMap({ restaurants, selectedRestaurant, onSelectRestaurant }) {

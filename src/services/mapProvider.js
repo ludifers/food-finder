@@ -23,5 +23,5 @@ export function getMapProviderName() {
     return "OpenStreetMap";
   }
 
-  return "Viera mock data";
+  return "UCF mock data";
 }

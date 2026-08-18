@@ -65,10 +65,10 @@ function SwipePage() {
   const [hasLoadedPlaces, setHasLoadedPlaces] = useState(false);
   const isMockProvider = shouldUseMockProvider();
   const initialLocationQuery = isMockProvider
-    ? "Viera"
+    ? "UCF"
     : location.state?.locationQuery ||
       matchPreferences.searchLocation ||
-      "Orlando";
+      "UCF, Orlando, FL";
   const locationQuery = initialLocationQuery;
   const [index, setIndex] = useState(0);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -205,7 +205,7 @@ function SwipePage() {
               <h1>{hasLoadedPlaces ? "No matches found" : "Loading restaurants"}</h1>
               <p>
                 {hasLoadedPlaces
-                  ? "Try changing your preferences so FoodFinder can widen the list."
+                  ? "Try changing your preferences so FoodFinder can widen the UCF-area list."
                   : `FoodFinder is loading real restaurants from ${mapProviderName}.`}
               </p>
               <button className="primary-btn" onClick={() => navigate("/cravings")}>
@@ -250,7 +250,7 @@ function SwipePage() {
               Back
             </button>
             <span>
-              {index + 1} of {matchedRestaurants.length} from All matches:
+              {index + 1} of {matchedRestaurants.length} UCF-area matches:
               prioritized by price, location, and amenities
             </span>
           </div>

@@ -7,16 +7,14 @@ import {
 } from "../services/matchPreferences";
 
 const starterLocations = [
-  "Orlando",
-  "Viera",
-  "Cocoa Beach",
-  "Winter Park",
-  "Lake Nona",
-  "Downtown Orlando",
   "UCF",
+  "Knights Plaza",
+  "University Blvd",
+  "Alafaya Trail",
+  "Waterford Lakes",
+  "Research Park",
   "Oviedo",
-  "Kissimmee",
-  "Melbourne",
+  "East Orlando",
 ];
 
 function SearchPage() {
@@ -56,22 +54,22 @@ function SearchPage() {
 
       <main className="search-page">
         <section className="search-intro">
-          <p className="eyebrow">Search area</p>
-          <h1>Where should FoodFinder look?</h1>
+          <p className="eyebrow">UCF area search</p>
+          <h1>Where near UCF should FoodFinder look?</h1>
           <p>
-            Enter a city, neighborhood, or ZIP code to start matching restaurants
-            in that area.
+            Enter a campus landmark, nearby neighborhood, or ZIP code to start
+            matching restaurants around UCF.
           </p>
         </section>
 
         <section className="search-card">
           <form className="location-search-form" onSubmit={handleSubmit}>
             <label>
-              City, neighborhood, or ZIP
+              Campus area, neighborhood, or ZIP
               <input
                 value={locationInput}
                 onChange={(event) => setLocationInput(event.target.value)}
-                placeholder="Cocoa Beach, 32801, Winter Park"
+                placeholder="UCF, Knights Plaza, Waterford Lakes, or 32816"
               />
             </label>
             <button type="submit">Search</button>

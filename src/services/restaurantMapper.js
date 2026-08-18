@@ -1,7 +1,7 @@
 import { inferFoodTypesFromText } from "./foodPreferences";
 
 const fallbackImage =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 680'%3E%3Crect width='900' height='680' fill='%23f0eadf'/%3E%3Ccircle cx='450' cy='300' r='92' fill='%230f766e' opacity='.22'/%3E%3Cpath d='M300 410h300v42H300z' fill='%23151515' opacity='.18'/%3E%3Cpath d='M352 276h196l38 134H314z' fill='%23fffdfa' stroke='%23d6cdbc' stroke-width='18'/%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 680'%3E%3Crect width='900' height='680' fill='%23f6faf7'/%3E%3Ccircle cx='450' cy='300' r='92' fill='%23167a4a' opacity='.22'/%3E%3Cpath d='M300 410h300v42H300z' fill='%2310231a' opacity='.18'/%3E%3Cpath d='M352 276h196l38 134H314z' fill='%23ffffff' stroke='%23cbdad0' stroke-width='18'/%3E%3C/svg%3E";
 
 function formatPrice(priceLevel) {
   if (!priceLevel && priceLevel !== 0) {
@@ -282,8 +282,8 @@ export function mapGooglePlaceToRestaurant(place, index, cravings = []) {
     diningType: "Restaurant",
     matchNote:
       cravings.length > 0
-        ? `Matched near Orlando using your ${cravings.join(" / ")} profile.`
-        : "Popular restaurant result from Google Places near Orlando.",
+        ? `Matched near UCF using your ${cravings.join(" / ")} profile.`
+        : "Popular restaurant result from Google Places near UCF.",
     address,
     budgetNote: price === "Price varies" ? "Google does not list a price level." : `${price} on Google`,
     driveTime: "Open in Google Maps for live travel time",
@@ -308,7 +308,7 @@ export function mapGooglePlaceToRestaurant(place, index, cravings = []) {
 
     summary:
       place.editorialSummary ||
-      `${name} is a live Google Places result near Orlando.`,
+      `${name} is a live Google Places result near UCF.`,
     mapsUrl,
     website,
     menuUrl: website || buildMenuSearchUrl(name, address),
@@ -382,8 +382,8 @@ export function mapLegacyPlaceToRestaurant(place, index, cravings = []) {
     diningType: "Restaurant",
     matchNote:
       cravings.length > 0
-        ? `Matched near Orlando using your ${cravings.join(" / ")} profile.`
-        : "Popular restaurant result from Google Places near Orlando.",
+        ? `Matched near UCF using your ${cravings.join(" / ")} profile.`
+        : "Popular restaurant result from Google Places near UCF.",
     address,
     budgetNote: price === "Price varies" ? "Google does not list a price level." : `${price} on Google`,
     driveTime: "Open in Google Maps for live travel time",
@@ -406,7 +406,7 @@ export function mapLegacyPlaceToRestaurant(place, index, cravings = []) {
       takeout: "Check listing",
     },
 
-    summary: `${place.name || "This restaurant"} is a live Google Places result near Orlando.`,
+    summary: `${place.name || "This restaurant"} is a live Google Places result near UCF.`,
     mapsUrl,
     website: mapsUrl,
     menuUrl: buildMenuSearchUrl(place.name, address),
