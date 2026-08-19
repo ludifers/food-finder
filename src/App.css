@@ -993,6 +993,47 @@ button {
   font-size: 14px;
 }
 
+.signup-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 35, 26, 0.42);
+  padding: 20px;
+}
+
+.signup-prompt {
+  width: min(100%, 420px);
+  border: 1px solid #d9e5dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(16, 35, 26, 0.26);
+  padding: 24px;
+}
+
+.signup-prompt h2 {
+  margin: 8px 0 10px;
+  font-size: 28px;
+  line-height: 1.08;
+}
+
+.signup-prompt p:not(.eyebrow) {
+  color: #59685f;
+  line-height: 1.5;
+}
+
+.signup-prompt-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.signup-prompt-actions button {
+  width: 100%;
+}
+
 .choice-summary p {
   margin: 0;
 }
@@ -2146,7 +2187,8 @@ button {
   .auth-layout,
   .profile-dashboard,
   .profile-two-column,
-  .profile-action-row {
+  .profile-action-row,
+  .signup-prompt-actions {
     grid-template-columns: 1fr;
   }
 

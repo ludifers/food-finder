@@ -95,6 +95,7 @@ function SwipePage() {
   const [passed, setPassed] = useState([]);
   const [saveError, setSaveError] = useState("");
   const [mapStatus, setMapStatus] = useState("");
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [swipeUsage, setSwipeUsage] = useState({
     count: 0,
     paidChoicesRemaining: 0,
@@ -228,7 +229,7 @@ function SwipePage() {
     }
 
     if (!user) {
-      navigate("/account");
+      setShowSignupPrompt(true);
       return;
     }
 
@@ -351,6 +352,38 @@ function SwipePage() {
   return (
     <div>
       <Navbar />
+
+      {showSignupPrompt && (
+        <div className="signup-prompt-overlay" role="presentation">
+          <section
+            aria-labelledby="signup-prompt-title"
+            className="signup-prompt"
+            role="dialog"
+          >
+            <p className="eyebrow">Keep choosing</p>
+            <h2 id="signup-prompt-title">Make an account to get 4 more decisions.</h2>
+            <p>
+              FoodFinder saves your choices so your next UCF matches get sharper.
+            </p>
+            <div className="signup-prompt-actions">
+              <button
+                className="primary-btn"
+                onClick={() => navigate("/account")}
+                type="button"
+              >
+                Create account
+              </button>
+              <button
+                className="secondary-btn"
+                onClick={() => setShowSignupPrompt(false)}
+                type="button"
+              >
+                Keep browsing
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <div className="swipe-layout">
         <aside className="restaurant-panel">
