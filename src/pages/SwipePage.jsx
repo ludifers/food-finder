@@ -211,7 +211,12 @@ function SwipePage() {
 
   function handleBuyChoices() {
     if (!user) {
-      navigate("/account");
+      navigate("/account", {
+        state: {
+          accountMode: "signup",
+          accountPrompt: "Make an account to get 4 more decisions.",
+        },
+      });
       return;
     }
 
@@ -228,7 +233,12 @@ function SwipePage() {
     }
 
     if (!user) {
-      navigate("/account");
+      navigate("/account", {
+        state: {
+          accountMode: "signup",
+          accountPrompt: "Make an account to get 4 more decisions.",
+        },
+      });
       return;
     }
 
