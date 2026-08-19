@@ -21,7 +21,10 @@ import {
 } from "../services/ucfArea";
 
 const MAP_DRAG_REFRESH_MILES = 4;
-const GOOGLE_RESULT_LIMIT = 10;
+const GOOGLE_RESULT_LIMIT = 6;
+const GOOGLE_SEARCH_COOLDOWN_MS = 30000;
+const MAX_DETAIL_HYDRATION = 3;
+const MAX_NEARBY_TYPE_GROUPS = 2;
 
 function createConcurrencyLimiter(max) {
   let running = 0;
@@ -338,7 +341,7 @@ async function searchNearbyNewApi(center) {
   const limit = createConcurrencyLimiter(2);
 
   const placeGroups = await Promise.all(
-    FOOD_PLACE_TYPE_GROUPS.map((includedPrimaryTypes) =>
+    FOOD_PLACE_TYPE_GROUPS.slice(0, MAX_NEARBY_TYPE_GROUPS).map((includedPrimaryTypes) =>
       limit(async () => {
         reserveGoogleRequest();
         const { places } = await Place.searchNearby({
@@ -373,10 +376,7 @@ async function searchPlaces(map, center, query, locationQuery, legacySearch) {
     () => []
   );
 
-  const broadTextPlaces = locationQuery
-    ? await searchTextNewApi(center, "restaurants", locationQuery).catch(() => [])
-    : [];
-  const textResults = dedupePlaces([...textPlaces, ...broadTextPlaces]);
+  const textResults = dedupePlaces(textPlaces);
   const nearbyCenter = center || getPlacePoint(textResults[0]);
   const nearbyPlaces = nearbyCenter
     ? await searchNearbyNewApi(nearbyCenter).catch(() =>
@@ -400,7 +400,7 @@ async function hydratePlacePhotos(places) {
   const limit = createConcurrencyLimiter(5);
 
   await Promise.all(
-    places.map((place) =>
+    places.slice(0, MAX_DETAIL_HYDRATION).map((place) =>
       limit(async () => {
         if (!place.fetchFields || place.photos?.length > 1) {
           return;
@@ -443,6 +443,7 @@ function GoogleRestaurantMap({
   const mapInstance = useRef(null);
   const markers = useRef([]);
   const lastSearchCenter = useRef(null);
+  const lastGoogleSearchAt = useRef(0);
   const mapRefreshRequest = useRef(0);
   const [isLoading, setIsLoading] = useState(true);
   const visibleHours = displayHours(selectedRestaurant?.hours);
@@ -481,7 +482,27 @@ function GoogleRestaurantMap({
     let ignore = false;
     let dragListener = null;
 
-    async function loadRestaurantsForCenter(center, searchQuery, queryLabel = "") {
+    async function loadRestaurantsForCenter(
+      center,
+      searchQuery,
+      queryLabel = "",
+      options = {}
+    ) {
+      const now = Date.now();
+
+      if (
+        !options.skipCooldown &&
+        lastGoogleSearchAt.current &&
+        now - lastGoogleSearchAt.current < GOOGLE_SEARCH_COOLDOWN_MS
+      ) {
+        const waitSeconds = Math.ceil(
+          (GOOGLE_SEARCH_COOLDOWN_MS - (now - lastGoogleSearchAt.current)) / 1000
+        );
+        onStatusChange(`Live search is cooling down. Try again in ${waitSeconds}s.`);
+        return;
+      }
+
+      lastGoogleSearchAt.current = now;
       const requestId = ++mapRefreshRequest.current;
       setIsLoading(true);
       try {
@@ -597,7 +618,8 @@ function GoogleRestaurantMap({
         await loadRestaurantsForCenter(
           searchCenter,
           searchQuery,
-          searchLocationQuery
+          searchLocationQuery,
+          { skipCooldown: true }
         );
 
         if (ignore) {
