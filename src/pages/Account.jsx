@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { useAuth } from "../context/useAuth";
 import {
@@ -137,13 +137,8 @@ async function geocodeAddress(address) {
 
 function Account() {
   const { isFirebaseConfigured, user } = useAuth();
-  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const signupPrompt = typeof location.state?.accountPrompt === "string"
-    ? location.state.accountPrompt
-    : "";
-  const initialMode = location.state?.accountMode === "signup" ? "signup" : "login";
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState({
     email: "",
     name: "",
@@ -330,15 +325,10 @@ function Account() {
         <section className="account-shell">
           <div className="account-hero">
             <p className="eyebrow">UCF FoodFinder</p>
-            <h1>
-              {user
-                ? "Your food profile"
-                : signupPrompt || "Build your campus food profile"}
-            </h1>
+            <h1>{user ? "Your food profile" : "Build your campus food profile"}</h1>
             <p>
-              {signupPrompt
-                ? "Create your FoodFinder account so your swipe choices and saved spots stay with you."
-                : "Keep your saved spots, UCF-area preferences, and matching defaults in one place."}
+              Keep your saved spots, UCF-area preferences, and matching defaults
+              in one place.
             </p>
             {isPaymentPending && (
               <div className="payment-pending-banner">
